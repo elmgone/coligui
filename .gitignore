@@ -29,3 +29,7 @@ _testmain.go
 elm-stuff
 index.html
 wui.ego
+
+# tmp files
+*~
+*.old
