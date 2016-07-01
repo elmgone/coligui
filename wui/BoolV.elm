@@ -12,7 +12,7 @@
 -- See the License for the specific language governing permissions and
 -- limitations under the License.
 
-module Text exposing (Model, Msg, init, update, view)
+module BoolV exposing (Model, Msg, init, update, view)
 
 import Html exposing (..)
 import Html.App
@@ -25,7 +25,7 @@ import Json.Encode
 
 main =
   Html.App.program {
-    init = ( init "First Name" ),
+    init = ( init "To Be or Not To Be" ),
     view = view,
     update = update,
     subscriptions = subscriptions
@@ -37,19 +37,19 @@ main =
 type alias Model =
   { id      : String
   , label   : String
-  , value   : String
+  , isTrue    : Bool
   , visible : Bool
   }
 
 init : String -> (Model, Cmd Msg)
 init name =
-  (Model "" name "" True, Cmd.none)
+  (Model "" name False True, Cmd.none)
 
 
 -- UPDATE
 
 type Msg =
-  Edit String
+  Set Bool
 --    Save
 --  | Edit
 --  | EditPath String
@@ -63,8 +63,8 @@ update msg model =
 --    d = toString model.dirty
 --  in
     case msg of
-      Edit nVal ->
-        ( { model | value = (Debug.log model.label nVal)
+      Set nVal ->
+        ( { model | isTrue = (Debug.log model.label nVal)
           }, Cmd.none )
 
 {-- }
@@ -94,8 +94,8 @@ visibleView : Model -> Html Msg
 visibleView model =
   div [] [
     label [] [ text model.label ]
-  , input [ type' "text", value model.value, onInput Edit ] []
-  --, text (toString model.value)
+  , input [ type' "checkbox", checked model.isTrue, onCheck Set ] []
+  --, text (toString model.isTrue)
   ]
 
 invisibleView : Model -> Html Msg

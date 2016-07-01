@@ -1,4 +1,4 @@
-package wuisrv
+package srv
 
 import (
 	"log"

@@ -12,7 +12,10 @@
 -- See the License for the specific language governing permissions and
 -- limitations under the License.
 
-module Bool exposing (Model, Msg, init, update, view)
+module RSync exposing (Model, Msg, init, update, view)
+
+import BoolV
+import StringV
 
 import Html exposing (..)
 import Html.App
@@ -25,7 +28,7 @@ import Json.Encode
 
 main =
   Html.App.program {
-    init = ( init "To Be or Not To Be" ),
+    init = init,  -- ( init "To Be or Not To Be" ),
     view = view,
     update = update,
     subscriptions = subscriptions
@@ -36,20 +39,24 @@ main =
 
 type alias Model =
   { id      : String
-  , label   : String
-  , isTrue    : Bool
+  --, label   : String
+  , verbose : BoolV.Model
   , visible : Bool
   }
 
-init : String -> (Model, Cmd Msg)
-init name =
-  (Model "" name False True, Cmd.none)
+-- init : String -> (Model, Cmd Msg)
+init : (Model, Cmd Msg)
+init =
+  let
+    ( verbV, verbC ) = BoolV.init "verbose"
+  in
+    (Model "" verbV True, Cmd.map (VerboseMsg verbV) verbC)  -- Cmd.map (TagMsg model.nextIdx) tCmd
 
 
 -- UPDATE
 
 type Msg =
-  Set Bool
+  VerboseMsg BoolV.Model BoolV.Msg
 --    Save
 --  | Edit
 --  | EditPath String
@@ -63,9 +70,13 @@ update msg model =
 --    d = toString model.dirty
 --  in
     case msg of
-      Set nVal ->
-        ( { model | isTrue = (Debug.log model.label nVal)
-          }, Cmd.none )
+      VerboseMsg verbBV bMsg ->
+        let
+          (newVerb, vCmd) = BoolV.update bMsg verbBV
+        in
+        ( { model | verbose = newVerb -- (Debug.log model.label nVal)
+--          }, Cmd.none )
+          }, Cmd.map (VerboseMsg newVerb) vCmd )
 
 {-- }
       Save ->
@@ -85,6 +96,15 @@ update msg model =
 
 view : Model -> Html Msg
 view model =
+  let
+    vv = Debug.log "verbose" model.verbose
+    verbView = Html.App.map (VerboseMsg model.verbose) (BoolV.view vv)
+  in
+    div [] [
+      verbView
+    ]
+
+{-- }
       if model.visible then
         visibleView model
       else
@@ -92,16 +112,19 @@ view model =
 
 visibleView : Model -> Html Msg
 visibleView model =
-  div [] [
-    label [] [ text model.label ]
-  , input [ type' "checkbox", checked model.isTrue, onCheck Set ] []
+  let
+    verbHM =
+  in
+    div [] [
+      label [] [ text model.label ]
+    , input [ type' "checkbox", checked model.isTrue, onCheck Set ] []
   --, text (toString model.isTrue)
-  ]
+    ]
 
 invisibleView : Model -> Html Msg
 invisibleView model =
   div [] []
-
+{ --}
 
 -- SUBSCRIPTIONS
 
