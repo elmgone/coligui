@@ -14,8 +14,13 @@
 
 module RSync exposing (Model, Msg, init, update, view)
 
-import BoolV
-import StringV
+import Param
+
+--type alias BoolV = Param.BoolV
+
+--type alias StringV = Param.StringV
+
+-- import StringV
 
 import Html exposing (..)
 import Html.App
@@ -39,8 +44,10 @@ main =
 
 type alias Model =
   { id        : String
-  , srcFolder : StringV.Model
-  , verbose   : BoolV.Model
+--  , srcFolder : StringV.Model
+--  , verbose   : BoolV.Model
+  , srcFolder : Param.StringV  -- .Model
+  , verbose   : Param.BoolV    -- .Model
   , visible   : Bool
   }
 
@@ -48,10 +55,10 @@ type alias Model =
 init : (Model, Cmd Msg)
 init =
   let
-    ( verbV, verbC ) = BoolV.init "verbose"
+    ( verbV, verbC ) = Param.init "verbose" False -- BoolV.init "verbose"
     vCM = Cmd.map (VerboseMsg verbV) verbC
 
-    ( sfV, sfC ) = StringV.init "source folder"
+    ( sfV, sfC ) = Param.init "source folder" "" -- StringV.init "source folder"
     sfCM = Cmd.map (SrcFolderMsg sfV) sfC
 
     cmd = Cmd.batch ([vCM, sfCM])
@@ -62,8 +69,12 @@ init =
 -- UPDATE
 
 type Msg =
-    VerboseMsg   BoolV.Model   BoolV.Msg
-  | SrcFolderMsg StringV.Model StringV.Msg
+    VerboseMsg   Param.BoolV   (Param.Msg Bool)
+  | SrcFolderMsg Param.StringV (Param.Msg String)
+
+--    VerboseMsg   BoolV.Model   BoolV.Msg
+--  | SrcFolderMsg StringV.Model StringV.Msg
+
 --    Save
 --  | Edit
 --  | EditPath String
@@ -79,17 +90,21 @@ update msg model =
     case msg of
       VerboseMsg verbBV bMsg ->
         let
-          (newVerb, vCmd) = BoolV.update bMsg verbBV
+          -- (newVerb, vCmd) = BoolV.update bMsg verbBV
+          newVerb = Param.updateModel bMsg verbBV
         in
-        ( { model | verbose = newVerb -- (Debug.log model.label nVal)
-          }, Cmd.map (VerboseMsg newVerb) vCmd )
+          ( { model | verbose = newVerb -- (Debug.log model.label nVal)
+            --}, Cmd.map (VerboseMsg newVerb) vCmd )
+            }, Cmd.none )
 
       SrcFolderMsg sfBV sMsg ->
         let
-          (newSF, sfCmd) = StringV.update sMsg sfBV
+          --(newSF, sfCmd) = StringV.update sMsg sfBV
+          newSF = Param.updateModel sMsg sfBV
         in
-        ( { model | srcFolder = newSF
-          }, Cmd.map (SrcFolderMsg newSF) sfCmd )
+          ( { model | srcFolder = newSF
+            --}, Cmd.map (SrcFolderMsg newSF) sfCmd )
+            }, Cmd.none )
 
 {-- }
       Save ->
@@ -111,10 +126,12 @@ view : Model -> Html Msg
 view model =
   let
     vv = Debug.log "verbose" model.verbose
-    verbView = Html.App.map (VerboseMsg model.verbose) (BoolV.view vv)
+    --verbView = Html.App.map (VerboseMsg model.verbose) (BoolV.view vv)
+    verbView = Html.App.map (VerboseMsg model.verbose) (Param.viewBool vv)
 
     sfv = Debug.log "src folder" model.srcFolder
-    sfView = Html.App.map (SrcFolderMsg model.srcFolder) (StringV.view sfv)
+    --sfView = Html.App.map (SrcFolderMsg model.srcFolder) (StringV.view sfv)
+    sfView = Html.App.map (SrcFolderMsg model.srcFolder) (Param.viewString sfv)
 
   in
     div [] [
