@@ -12,10 +12,7 @@
 -- See the License for the specific language governing permissions and
 -- limitations under the License.
 
-module RSync exposing (Model, Msg, init, update, view)
-
-import BoolV
-import StringV
+module StringV exposing (Model, Msg, init, update, view)
 
 import Html exposing (..)
 import Html.App
@@ -28,7 +25,7 @@ import Json.Encode
 
 main =
   Html.App.program {
-    init = init,  -- ( init "To Be or Not To Be" ),
+    init = ( init "First Name" ),
     view = view,
     update = update,
     subscriptions = subscriptions
@@ -38,32 +35,21 @@ main =
 -- MODEL
 
 type alias Model =
-  { id        : String
-  , srcFolder : StringV.Model
-  , verbose   : BoolV.Model
-  , visible   : Bool
+  { id      : String
+  , label   : String
+  , value   : String
+  , visible : Bool
   }
 
--- init : String -> (Model, Cmd Msg)
-init : (Model, Cmd Msg)
-init =
-  let
-    ( verbV, verbC ) = BoolV.init "verbose"
-    vCM = Cmd.map (VerboseMsg verbV) verbC
-
-    ( sfV, sfC ) = StringV.init "source folder"
-    sfCM = Cmd.map (SrcFolderMsg sfV) sfC
-
-    cmd = Cmd.batch ([vCM, sfCM])
-  in
-    (Model "" sfV verbV True, cmd)  -- Cmd.map (VerboseMsg verbV) verbC)
+init : String -> (Model, Cmd Msg)
+init name =
+  (Model "" name "" True, Cmd.none)
 
 
 -- UPDATE
 
 type Msg =
-    VerboseMsg   BoolV.Model   BoolV.Msg
-  | SrcFolderMsg StringV.Model StringV.Msg
+  Edit String
 --    Save
 --  | Edit
 --  | EditPath String
@@ -77,19 +63,9 @@ update msg model =
 --    d = toString model.dirty
 --  in
     case msg of
-      VerboseMsg verbBV bMsg ->
-        let
-          (newVerb, vCmd) = BoolV.update bMsg verbBV
-        in
-        ( { model | verbose = newVerb -- (Debug.log model.label nVal)
-          }, Cmd.map (VerboseMsg newVerb) vCmd )
-
-      SrcFolderMsg sfBV sMsg ->
-        let
-          (newSF, sfCmd) = StringV.update sMsg sfBV
-        in
-        ( { model | srcFolder = newSF
-          }, Cmd.map (SrcFolderMsg newSF) sfCmd )
+      Edit nVal ->
+        ( { model | value = (Debug.log model.label nVal)
+          }, Cmd.none )
 
 {-- }
       Save ->
@@ -109,21 +85,6 @@ update msg model =
 
 view : Model -> Html Msg
 view model =
-  let
-    vv = Debug.log "verbose" model.verbose
-    verbView = Html.App.map (VerboseMsg model.verbose) (BoolV.view vv)
-
-    sfv = Debug.log "src folder" model.srcFolder
-    sfView = Html.App.map (SrcFolderMsg model.srcFolder) (StringV.view sfv)
-
-  in
-    div [] [
-      h1 [] [ text "RSync" ]
-    , sfView
-    , verbView
-    ]
-
-{-- }
       if model.visible then
         visibleView model
       else
@@ -131,19 +92,16 @@ view model =
 
 visibleView : Model -> Html Msg
 visibleView model =
-  let
-    verbHM =
-  in
-    div [] [
-      label [] [ text model.label ]
-    , input [ type' "checkbox", checked model.isTrue, onCheck Set ] []
-  --, text (toString model.isTrue)
-    ]
+  div [] [
+    label [] [ text model.label ]
+  , input [ type' "text", value model.value, onInput Edit ] []
+  --, text (toString model.value)
+  ]
 
 invisibleView : Model -> Html Msg
 invisibleView model =
   div [] []
-{ --}
+
 
 -- SUBSCRIPTIONS
 
