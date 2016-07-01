@@ -44,10 +44,9 @@ main =
 
 type alias Model =
   { id        : String
---  , srcFolder : StringV.Model
---  , verbose   : BoolV.Model
-  , srcFolder : Param.StringV  -- .Model
-  , verbose   : Param.BoolV    -- .Model
+--  , srcFolder : Param.StringV  -- .Model
+  , srcFolder : Param.Model String
+  , verbose   : Param.Model Bool
   , visible   : Bool
   }
 
@@ -69,11 +68,8 @@ init =
 -- UPDATE
 
 type Msg =
-    VerboseMsg   Param.BoolV   (Param.Msg Bool)
-  | SrcFolderMsg Param.StringV (Param.Msg String)
-
---    VerboseMsg   BoolV.Model   BoolV.Msg
---  | SrcFolderMsg StringV.Model StringV.Msg
+    VerboseMsg   (Param.Model Bool)   (Param.Msg Bool)
+  | SrcFolderMsg (Param.Model String) (Param.Msg String)
 
 --    Save
 --  | Edit

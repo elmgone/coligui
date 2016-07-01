@@ -19,9 +19,13 @@ _cgo_export.*
 
 _testmain.go
 
+# Binaries
 *.exe
 *.test
 *.prof
+
+
+# elmgode specific stuff
 elm-stuff
 index.html
 wui.ego

@@ -13,7 +13,7 @@
 -- limitations under the License.
 
 -- module BoolV exposing (Model, Msg, init, update, view)
-module Param exposing ( {--} BoolV, StringV, {--} Model, Msg, init, updateModel, viewBool, viewString)  -- , view)
+module Param exposing ( {-- BoolV,-- } StringV, { --} Model, Msg, init, updateModel, viewList, viewBool, viewString)  -- , view)
 
 import Html exposing (..)
 import Html.App
@@ -36,8 +36,8 @@ main =
 
 
 
-type alias BoolV =
-  Model Bool
+--type alias BoolV =
+  --Model Bool
 
 type alias StringV =
   Model String
@@ -89,28 +89,24 @@ updateModel msg model =
 
 -- VIEW
 
-viewBool : BoolV -> Html (Msg Bool)
+{-- }
+view : Model valType -> Html (Msg valType)
+view model =
+  case model of
+    Model Bool ->
+      div [] (viewList model)
+--}
+
+viewBool : (Model Bool) -> Html (Msg Bool)
 viewBool model =
-  div [] (viewBoolList model)
+  div [] --(viewBoolList model)
+    (viewList model [ input [ type' "checkbox", checked model.value, onCheck Edit ] [] ])
 
-viewBoolList : BoolV -> List (Html (Msg Bool))
-viewBoolList model =
-  viewList model [ input [ type' "checkbox", checked model.value, onCheck Edit ] [] ]
-
+{--}
 viewString : StringV -> Html (Msg String)
 viewString model =
-  div [] (viewStringList model)
-
-viewStringList : StringV -> List (Html (Msg String))
-viewStringList model =
-  viewList model [ input [ type' "text", value model.value, onInput Edit ] [] ]
-
-
-{-- }
-viewList : Model valType -> List (Html (Msg valType)) -> List (Html (Msg valType))
-viewList model modelElems =
-  ( label [] [ text model.label ] ) :: modelElems
---}
+  div []  -- (viewStringList model)
+    ( viewList model [ input [ type' "text", value model.value, onInput Edit ] [] ] )
 
 viewList : Model valType -> List (Html (Msg valType)) -> List (Html (Msg valType))
 viewList model modelElems =
