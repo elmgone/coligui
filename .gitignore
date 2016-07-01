@@ -22,3 +22,6 @@ _testmain.go
 *.exe
 *.test
 *.prof
+elm-stuff
+index.html
+wui.ego
