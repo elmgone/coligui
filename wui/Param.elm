@@ -13,7 +13,7 @@
 -- limitations under the License.
 
 -- module BoolV exposing (Model, Msg, init, update, view)
-module Param exposing ( {-- BoolV,-- } StringV, { --} Model, Msg, init, updateModel, viewList, viewBool, viewString)  -- , view)
+module Param exposing ( {-- BoolV,-- } StringV, { --} Model, Msg, Id, init, updateModel, viewList, viewBool, viewString)  -- , view)
 
 import Html exposing (..)
 import Html.App
@@ -45,22 +45,29 @@ type alias StringV =
 
 -- MODEL
 
+type alias Id = String
+
 type alias Model valType =
-  { id      : String
+  { id      : Id
   , label   : String
   , value   : valType
   , visible : Bool
   }
 
-init : String -> valType -> (Model valType, Cmd (Msg valType))
+init : String -> valType -> Model valType
 init name val =
-  (Model "" name val True, Cmd.none)
+  Model "" name val True
+
+--init : String -> valType -> (Model valType, Cmd (Msg valType))
+--init name val =
+  --(Model "" name val True, Cmd.none)
 
 
 -- UPDATE
 
 type Msg valType =
-  Edit valType
+    Edit valType
+  | Visible Bool
 
 {-- }
 --  Set Bool
@@ -78,13 +85,19 @@ update msg model =
           }, Cmd.none )
 { --}
 
-updateModel : Msg valType -> Model valType -> Model valType
-updateModel msg model =
+updateModel : Id -> Msg valType -> Model valType -> Model valType
+updateModel id msg model =
+  if id /= model.id then
+    model
+  else
     case msg of
       Edit val ->
         { model | value = {--val  --}  (Debug.log model.label val)
         }
 
+      Visible vis ->
+        { model | visible = {--vis  --}  (Debug.log (model.label ++ " visble") vis)
+        }
 
 
 -- VIEW

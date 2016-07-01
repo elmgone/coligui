@@ -44,31 +44,35 @@ main =
 
 type alias Model =
   { id        : String
---  , srcFolder : Param.StringV  -- .Model
   , srcFolder : Param.Model String
-  , verbose   : Param.Model Bool
-  , visible   : Bool
+  --, verbose   : Param.Model Bool
+  , flags     : List (Param.Model Bool)
+  --, visible   : Bool
   }
 
--- init : String -> (Model, Cmd Msg)
 init : (Model, Cmd Msg)
 init =
   let
-    ( verbV, verbC ) = Param.init "verbose" False -- BoolV.init "verbose"
-    vCM = Cmd.map (VerboseMsg verbV) verbC
+    --( verbV, verbC ) = Param.init "verbose" False
+    --vCM = Cmd.map (VerboseMsg verbV) verbC
 
-    ( sfV, sfC ) = Param.init "source folder" "" -- StringV.init "source folder"
-    sfCM = Cmd.map (SrcFolderMsg sfV) sfC
+    --( sfV, sfC ) = Param.init "source folder" ""
+    --sfCM = Cmd.map (SrcFolderMsg sfV) sfC
+    sfV = Param.init "source folder" ""
 
-    cmd = Cmd.batch ([vCM, sfCM])
+    --cmd = Cmd.batch ([vCM, sfCM])
   in
-    (Model "" sfV verbV True, cmd)  -- Cmd.map (VerboseMsg verbV) verbC)
+    (Model "" sfV []  -- True
+    , Cmd.none)
+    --, sfCM)
+    --, cmd)
 
 
 -- UPDATE
 
 type Msg =
-    VerboseMsg   (Param.Model Bool)   (Param.Msg Bool)
+    --VerboseMsg   (Param.Model Bool)   (Param.Msg Bool)
+    ChangeFlag   Param.Id   (Param.Msg Bool)
   | SrcFolderMsg (Param.Model String) (Param.Msg String)
 
 --    Save
@@ -79,24 +83,32 @@ type Msg =
 
 update : Msg -> Model -> (Model, Cmd Msg)
 update msg model =
---  let
---    e = toString model.editing
---    d = toString model.dirty
---  in
     case msg of
+      ChangeFlag idx bMsg ->
+        let
+          --newVerb = Param.updateModel bMsg verbBV
+          newFlags = List.map (Param.updateModel idx bMsg) model.flags
+        in
+          --( { model | verbose = newVerb -- (Debug.log model.label nVal)
+          ( { model | flags = newFlags -- (Debug.log model.label nVal)
+            --}, Cmd.map (VerboseMsg newVerb) vCmd )
+            }, Cmd.none )
+
+{-- }
       VerboseMsg verbBV bMsg ->
         let
           -- (newVerb, vCmd) = BoolV.update bMsg verbBV
           newVerb = Param.updateModel bMsg verbBV
         in
           ( { model | verbose = newVerb -- (Debug.log model.label nVal)
-            --}, Cmd.map (VerboseMsg newVerb) vCmd )
+            -- }, Cmd.map (VerboseMsg newVerb) vCmd )
             }, Cmd.none )
+--}
 
       SrcFolderMsg sfBV sMsg ->
         let
           --(newSF, sfCmd) = StringV.update sMsg sfBV
-          newSF = Param.updateModel sMsg sfBV
+          newSF = Param.updateModel "srcF" sMsg sfBV
         in
           ( { model | srcFolder = newSF
             --}, Cmd.map (SrcFolderMsg newSF) sfCmd )
@@ -115,15 +127,18 @@ update msg model =
           ( Debug.log "Ok" newModel, saveTag newModel )
 { --}
 
+--updateFlag : Idx  model =
+--updateFlag msg model =
+
+
 
 -- VIEW
 
 view : Model -> Html Msg
 view model =
   let
-    vv = Debug.log "verbose" model.verbose
-    --verbView = Html.App.map (VerboseMsg model.verbose) (BoolV.view vv)
-    verbView = Html.App.map (VerboseMsg model.verbose) (Param.viewBool vv)
+    --vv = Debug.log "verbose" model.verbose
+    --verbView = Html.App.map (VerboseMsg model.verbose) (Param.viewBool vv)
 
     sfv = Debug.log "src folder" model.srcFolder
     --sfView = Html.App.map (SrcFolderMsg model.srcFolder) (StringV.view sfv)
@@ -133,7 +148,7 @@ view model =
     div [] [
       h1 [] [ text "RSync" ]
     , sfView
-    , verbView
+    --, verbView
     ]
 
 {-- }
