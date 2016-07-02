@@ -113,65 +113,23 @@ update msg model =
 view : Model -> Html Msg
 view model =
   let
-    --sfP = Debug.log "src folder" model.srcFolder
-    --sfVTr = viewOptStringTr (Just sfP)
+    flg id = viewOptFlagTr   (Param.get model.flags id)
+    str id = viewOptStringTr (Param.get model.strings id)
+
     --sfP = Debug.log "src folder" (Param.get model.strings "srcF")
-    sfP = Param.get model.strings "srcF"
-    sfVTr = viewOptStringTr sfP
-
-    --verboseP = Debug.log "verbose" (Param.get model.flags "v")
-    verboseP = Param.get model.flags "v"
-    verboseVTr = viewOptFlagTr verboseP
-
-    --recursiveP = Debug.log "recursive" (Param.get model.flags "r")
-    recursiveP = Param.get model.flags "r"
-    recursiveVTr = viewOptFlagTr recursiveP
   in
     div [] [
-      h1 [] [ text "RSync" ]
+      h1 [] [
+        --text "RSync"
+        a [ href "http://localhost:33333" ] [ text "RSync" ]
+      ]
     , table [] [
-        verboseVTr
-      , sfVTr
-      , recursiveVTr
+        flg "v"         -- viewOptFlagTr   (flg "v")      -- (Param.get model.flags   "v")
+      , str "srcF"      -- viewOptStringTr (str "srcF")   -- (Param.get model.strings "srcF")
+      , flg "r"         -- viewOptFlagTr   (flg "r")      -- (Param.get model.flags   "r")
       ]
     ]
 
-
-{-- }
-view : Model -> Html Msg
-view model =
-  let
-    sfv = Debug.log "src folder" model.srcFolder
-    sfView = Html.App.map (SrcFolderMsg model.srcFolder) (Param.viewString sfv)
-
-    --viewOptFlag = Param.viewOneOpt Param.inputBool
-
-    verboseP = Debug.log "verbose" (Param.get model.flags "v")
-    verboseV = viewOptFlag verboseP
-    --verboseV = Html.App.map (ChangeFlag verboseP.id) (viewOptFlag verboseP)
-
-    recursiveP = Debug.log "recursive" (Param.get model.flags "r")
-    recursiveV = viewOptFlag recursiveP
-    --recursiveV = Html.App.map (ChangeFlag recursiveP.id) (viewOptFlag recursiveP)
-  in
-    div [] [
-      h1 [] [ text "RSync" ]
-    , verboseV
-    , sfView
-    , recursiveV
-    ]
---}
-
-
-{-- }
-viewOne : ( Param.Model valType -> Html (Param.Msg valType) ) -> Param.Model valType -> Html Msg
-viewOne inputOf param =
-  let
-    viewParam = Param.viewOne inputOf
-  in
-    --Html.App.map (ChangeFlag flag.id) (viewBool (Just flag))
-    Html.App.map (ChangeFlag param.id) (viewParam param)
---}
 
 {--}
 viewOptFlagTr : Maybe BoolP -> Html Msg
@@ -193,7 +151,7 @@ viewOptStringTr optStr =
       Html.App.map (ChangeString str.id) (Param.viewTR Param.inputString str)
 --}
 
-{--}
+{-- }
 viewOptFlag : Maybe BoolP -> Html Msg
 viewOptFlag optFlag =
   case optFlag of
@@ -201,31 +159,6 @@ viewOptFlag optFlag =
       div [] []
     Just flag ->
       Html.App.map (ChangeFlag flag.id) (Param.viewOneOpt Param.inputBool optFlag)
---}
-
-{-- }
-viewFlag : BoolP -> Html Msg
-viewFlag flag =
-  let
-    viewBool = Param.viewOne Param.inputBool
-  in
-    --Html.App.map (ChangeFlag flag.id) (viewBool (Just flag))
-    Html.App.map (ChangeFlag flag.id) (viewBool flag)
---}
-
-{-- }
--- viewList : Model valType -> List (Html (Msg valType)) -> List (Html (Msg valType))
-viewTR : Param.Model valType
-  -> ( Param.Model valType -> Html (Param.Msg valType) )
-  -> Html (Param.Msg valType)
-viewTR paramP inputOf =
-  let
-    -- list = Param.viewList paramP [ Param.inputBool paramP ]
-    list = Param.viewList paramP [ inputOf paramP ]
-    cells = List.map (\e -> td [] [ e ]) list
-  in
-    tr [] cells
-    --Html.App.map (ChangeFlag paramP.id) ( tr [] cells )
 --}
 
 {-- }
