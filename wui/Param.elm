@@ -13,8 +13,13 @@
 -- limitations under the License.
 
 module Param exposing (
-    Model, Msg, Id, BoolP, StringP
-  , init, get, update, updateOne, viewList, viewBool, viewString
+    Model, Msg, Id
+  , BoolP, StringP, BoolM, StringM
+  , init, get, update, updateOne, viewList
+  , viewOne, viewOneOpt, viewTR
+  , inputBool, inputString
+  --, viewBool
+  , viewString
   -- , updateModel, view)
   )
 
@@ -28,10 +33,6 @@ import Json.Decode as JD exposing ((:=))
 import Json.Encode
 
 
-type alias BoolP   = Model Bool
-type alias StringP = Model String
-
-
 {-- }
 main =
   Html.App.program {
@@ -43,15 +44,12 @@ main =
 --}
 
 
-
---type alias BoolV =
-  --Model Bool
-
---type alias StringV =
-  --Model String
-
-
 -- MODEL
+
+type alias BoolP   = Model Bool
+type alias StringP = Model String
+type alias BoolM   = Msg Bool
+type alias StringM = Msg String
 
 type alias Id = String
 
@@ -144,7 +142,7 @@ view model =
       div [] (viewList model)
 --}
 
--- viewBool : Maybe (Model Bool) -> Html (Msg Bool)
+{-- }
 viewBool : Maybe BoolP -> Html (Msg Bool)
 viewBool optModel =
   let
@@ -153,9 +151,59 @@ viewBool optModel =
         Nothing ->
           []
         Just model ->
-          viewList model [ input [ type' "checkbox", checked model.value, onCheck Edit ] [] ]
+          -- viewList model [ input [ type' "checkbox", checked model.value, onCheck Edit ] [] ]
+          viewList model [ inputBool model ]
   in
     div [] dc
+--}
+
+viewOne : ( Model valType -> Html (Msg valType) )
+  -> Model valType
+  -> Html (Msg valType)
+viewOne inputOf model =
+  let
+    dc =
+          -- viewList model [ input [ type' "checkbox", checked model.value, onCheck Edit ] [] ]
+          --viewList model [ inputBool model ]
+          viewList model [ inputOf model ]
+
+  in
+    div [] dc
+
+viewOneOpt : ( Model valType -> Html (Msg valType) )
+  -> Maybe (Model valType)
+  -> Html (Msg valType)
+viewOneOpt inputOf optModel =
+      case optModel of
+        Nothing ->
+          div [] []
+        Just model ->
+          viewOne inputOf model
+          --viewList model [ inputOf model ]
+
+
+viewTR : ( Model valType -> Html (Msg valType) )
+  -> Model valType
+  -> Html (Msg valType)
+viewTR inputOf paramP =
+  let
+    -- list = Param.viewList paramP [ Param.inputBool paramP ]
+    list = viewList paramP [ inputOf paramP ]
+    cells = List.map (\e -> td [] [ e ]) list
+  in
+    tr [] cells
+
+
+inputBool : BoolP -> Html (Msg Bool)
+inputBool model =
+  input [ type' "checkbox", checked model.value, onCheck Edit ] []
+
+inputString : StringP -> Html (Msg String)
+inputString model =
+  --input [ type' "checkbox", checked model.value, onCheck Edit ] []
+  input [ type' "text", value model.value, onInput Edit ] []
+
+
 
 {--}
 viewString : (Model String) -> Html (Msg String)
