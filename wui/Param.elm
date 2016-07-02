@@ -12,8 +12,7 @@
 -- See the License for the specific language governing permissions and
 -- limitations under the License.
 
--- module BoolV exposing (Model, Msg, init, update, view)
-module Param exposing ( {-- BoolV,-- } StringV, { --} Model, Msg, Id, init, updateModel, viewList, viewBool, viewString)  -- , view)
+module Param exposing ( Model, Msg, Id, init, update, updateOne, viewList, viewBool, viewString)  -- , updateModel, view)
 
 import Html exposing (..)
 import Html.App
@@ -39,8 +38,8 @@ main =
 --type alias BoolV =
   --Model Bool
 
-type alias StringV =
-  Model String
+--type alias StringV =
+  --Model String
 
 
 -- MODEL
@@ -54,9 +53,9 @@ type alias Model valType =
   , visible : Bool
   }
 
-init : String -> valType -> Model valType
-init name val =
-  Model "" name val True
+init : Id -> String -> valType -> Model valType
+init id name val =
+  Model id name val True
 
 --init : String -> valType -> (Model valType, Cmd (Msg valType))
 --init name val =
@@ -76,14 +75,27 @@ type Msg valType =
 --  | EditPath String
 --  | CreateSucceed Model
 --  | CreateFail Http.Error
+{ --}
 
-update : Msg valType -> Model valType -> (Model valType, Cmd Msg valType)
+update : Msg valType -> Model valType -> (Model valType, Cmd (Msg valType))
 update msg model =
     case msg of
       Edit val ->
         ( { model | value = {--val  --}  (Debug.log model.label val)
           }, Cmd.none )
-{ --}
+
+      Visible vis ->
+        ( { model | visible = {--val  --}  (Debug.log (model.label ++ " visible") vis)
+          }, Cmd.none )
+
+updateOne : Id -> Msg valType -> Model valType -> (Model valType, Cmd (Msg valType))
+updateOne id msg model =
+  let
+    mdl = updateModel id msg model
+  in
+    ( mdl, Cmd.none )
+
+{--}
 
 updateModel : Id -> Msg valType -> Model valType -> Model valType
 updateModel id msg model =
@@ -96,7 +108,7 @@ updateModel id msg model =
         }
 
       Visible vis ->
-        { model | visible = {--vis  --}  (Debug.log (model.label ++ " visble") vis)
+        { model | visible = {--vis  --}  (Debug.log (model.label ++ " visible") vis)
         }
 
 
@@ -116,7 +128,7 @@ viewBool model =
     (viewList model [ input [ type' "checkbox", checked model.value, onCheck Edit ] [] ])
 
 {--}
-viewString : StringV -> Html (Msg String)
+viewString : (Model String) -> Html (Msg String)
 viewString model =
   div []  -- (viewStringList model)
     ( viewList model [ input [ type' "text", value model.value, onInput Edit ] [] ] )

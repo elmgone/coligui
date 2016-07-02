@@ -58,12 +58,17 @@ init =
 
     --( sfV, sfC ) = Param.init "source folder" ""
     --sfCM = Cmd.map (SrcFolderMsg sfV) sfC
-    sfV = Param.init "source folder" ""
+    sfV = Param.init "srcF" "source folder" ""
+
+    flags = [
+      Param.init "v" "verbose" False
+    , Param.init "r" "recursive" False
+    ]
 
     --cmd = Cmd.batch ([vCM, sfCM])
   in
-    (Model "" sfV []  -- True
-    , Cmd.none)
+    ( Model "" sfV flags
+    , Cmd.none )
     --, sfCM)
     --, cmd)
 
@@ -71,7 +76,6 @@ init =
 -- UPDATE
 
 type Msg =
-    --VerboseMsg   (Param.Model Bool)   (Param.Msg Bool)
     ChangeFlag   Param.Id   (Param.Msg Bool)
   | SrcFolderMsg (Param.Model String) (Param.Msg String)
 
@@ -86,33 +90,22 @@ update msg model =
     case msg of
       ChangeFlag idx bMsg ->
         let
-          --newVerb = Param.updateModel bMsg verbBV
-          newFlags = List.map (Param.updateModel idx bMsg) model.flags
+          newFlagsNCmds = List.map (Param.updateOne idx bMsg) model.flags
+          ( newFlags, nCmds ) = List.unzip newFlagsNCmds
+          nCmd = Cmd.map (ChangeFlag idx) (Cmd.batch nCmds)
         in
-          --( { model | verbose = newVerb -- (Debug.log model.label nVal)
           ( { model | flags = newFlags -- (Debug.log model.label nVal)
             --}, Cmd.map (VerboseMsg newVerb) vCmd )
-            }, Cmd.none )
-
-{-- }
-      VerboseMsg verbBV bMsg ->
-        let
-          -- (newVerb, vCmd) = BoolV.update bMsg verbBV
-          newVerb = Param.updateModel bMsg verbBV
-        in
-          ( { model | verbose = newVerb -- (Debug.log model.label nVal)
-            -- }, Cmd.map (VerboseMsg newVerb) vCmd )
-            }, Cmd.none )
---}
+            }, nCmd )
 
       SrcFolderMsg sfBV sMsg ->
         let
           --(newSF, sfCmd) = StringV.update sMsg sfBV
-          newSF = Param.updateModel "srcF" sMsg sfBV
+          (newSF, sfCmd) = Param.updateOne "srcF" sMsg sfBV
         in
           ( { model | srcFolder = newSF
-            --}, Cmd.map (SrcFolderMsg newSF) sfCmd )
-            }, Cmd.none )
+            }, Cmd.map (SrcFolderMsg newSF) sfCmd )
+            --}, Cmd.none )
 
 {-- }
       Save ->
@@ -139,17 +132,24 @@ view model =
   let
     --vv = Debug.log "verbose" model.verbose
     --verbView = Html.App.map (VerboseMsg model.verbose) (Param.viewBool vv)
+    flagsView = List.map viewFlag model.flags
 
     sfv = Debug.log "src folder" model.srcFolder
     --sfView = Html.App.map (SrcFolderMsg model.srcFolder) (StringV.view sfv)
     sfView = Html.App.map (SrcFolderMsg model.srcFolder) (Param.viewString sfv)
 
   in
-    div [] [
+    div [] ([
       h1 [] [ text "RSync" ]
     , sfView
     --, verbView
-    ]
+    ] ++ flagsView)
+
+
+viewFlag : Param.Model Bool -> Html Msg
+viewFlag flag =
+  Html.App.map (ChangeFlag flag.id) (Param.viewBool flag)
+
 
 {-- }
       if model.visible then
