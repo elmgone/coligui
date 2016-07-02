@@ -38,8 +38,9 @@ main =
 
 type alias Model =
   { id        : String
-  , srcFolder : StringP
+  --, srcFolder : StringP
   , flags     : List BoolP
+  , strings   : List StringP
   --, visible   : Bool
   }
 
@@ -52,8 +53,12 @@ init =
       Param.init "v" "verbose" False
     , Param.init "r" "recursive" False
     ]
+
+    strings = [
+      Param.init "srcF" "source folder" ""
+    ]
   in
-    ( Model "" sfV flags
+    ( Model "" flags strings
     , Cmd.none )
 
 
@@ -61,8 +66,8 @@ init =
 
 type Msg =
     ChangeFlag   Param.Id   (Param.Msg Bool)
-  | SrcFolderMsg StringP    (Param.Msg String)
---  | ChangeString Param.Id    (Param.Msg String)
+--  | SrcFolderMsg StringP    (Param.Msg String)
+  | ChangeString Param.Id    (Param.Msg String)
 
 --    Save
 --  | Edit
@@ -79,10 +84,21 @@ update msg model =
           ( newFlags, nCmds ) = List.unzip newFlagsNCmds
           nCmd = Cmd.map (ChangeFlag idx) (Cmd.batch nCmds)
         in
-          ( { model | flags = newFlags -- (Debug.log model.label nVal)
+          ( { model | flags = newFlags
             }, nCmd
           )
 
+      ChangeString id msg ->
+        let
+          newStringsNCmds = List.map (Param.updateOne id msg) model.strings
+          ( newStrings, nCmds ) = List.unzip newStringsNCmds
+          nCmd = Cmd.map (ChangeString id) (Cmd.batch nCmds)
+        in
+          ( { model | strings = newStrings
+            }, nCmd
+          )
+
+{-- }
       SrcFolderMsg sfBV sMsg ->
         let
           (newSF, sfCmd) = Param.updateOne "srcF" sMsg sfBV
@@ -90,20 +106,25 @@ update msg model =
           ( { model | srcFolder = newSF }
           , Cmd.map (SrcFolderMsg newSF) sfCmd
           )
-
+--}
 
 -- VIEW
 
 view : Model -> Html Msg
 view model =
   let
-    sfP = Debug.log "src folder" model.srcFolder
-    sfVTr = viewOptStringTr (Just sfP)
+    --sfP = Debug.log "src folder" model.srcFolder
+    --sfVTr = viewOptStringTr (Just sfP)
+    --sfP = Debug.log "src folder" (Param.get model.strings "srcF")
+    sfP = Param.get model.strings "srcF"
+    sfVTr = viewOptStringTr sfP
 
-    verboseP = Debug.log "verbose" (Param.get model.flags "v")
+    --verboseP = Debug.log "verbose" (Param.get model.flags "v")
+    verboseP = Param.get model.flags "v"
     verboseVTr = viewOptFlagTr verboseP
 
-    recursiveP = Debug.log "recursive" (Param.get model.flags "r")
+    --recursiveP = Debug.log "recursive" (Param.get model.flags "r")
+    recursiveP = Param.get model.flags "r"
     recursiveVTr = viewOptFlagTr recursiveP
   in
     div [] [
@@ -169,7 +190,7 @@ viewOptStringTr optStr =
     Nothing ->
       div [] []
     Just str ->
-      Html.App.map (SrcFolderMsg str) (Param.viewTR Param.inputString str)
+      Html.App.map (ChangeString str.id) (Param.viewTR Param.inputString str)
 --}
 
 {--}
