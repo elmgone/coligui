@@ -14,7 +14,7 @@
 
 module RSync exposing (Model, Msg, init, update, view)
 
-import Param
+import Param exposing (BoolP, StringP)
 
 import Html exposing (..)
 import Html.App
@@ -36,8 +36,8 @@ main =
 
 -- MODEL
 
-type alias BoolP = Param.Model Bool
-type alias StringP = Param.Model String
+--type alias BoolP = Param.Model Bool
+--type alias StringP = Param.Model String
 
 type alias Model =
   { id        : String
@@ -121,21 +121,34 @@ view : Model -> Html Msg
 view model =
   let
     --vv = Debug.log "verbose" model.verbose
-    flagsView = List.map viewFlag model.flags
+    --flagsView = List.map viewFlag model.flags
 
     sfv = Debug.log "src folder" model.srcFolder
     sfView = Html.App.map (SrcFolderMsg model.srcFolder) (Param.viewString sfv)
 
+    verboseP = Debug.log "verbose" (Param.get model.flags "v")
+    --verboseV = Html.App.map (SrcFolderMsg model.srcFolder) (Param.viewBool verboseP)
+    verboseV = viewFlag verboseP
+
+    recursiveP = Debug.log "recursive" (Param.get model.flags "r")
+    -- recursiveV = Html.App.map (SrcFolderMsg model.srcFolder) (Param.viewBool verboseP)
+    recursiveV = viewFlag recursiveP
   in
     div [] ( [
       h1 [] [ text "RSync" ]
+    , verboseV  -- Param.get model.flags "v"
     , sfView
-    ] ++ flagsView )
+    , recursiveV
+    ] ) -- ++ flagsView )
 
 
-viewFlag : BoolP -> Html Msg
-viewFlag flag =
-  Html.App.map (ChangeFlag flag.id) (Param.viewBool flag)
+viewFlag : Maybe BoolP -> Html Msg
+viewFlag optFlag =
+  case optFlag of
+    Nothing ->
+      div [] []
+    Just flag ->
+      Html.App.map (ChangeFlag flag.id) (Param.viewBool optFlag)
 
 
 {-- }

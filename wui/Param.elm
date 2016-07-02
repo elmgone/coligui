@@ -12,7 +12,11 @@
 -- See the License for the specific language governing permissions and
 -- limitations under the License.
 
-module Param exposing ( Model, Msg, Id, init, update, updateOne, viewList, viewBool, viewString)  -- , updateModel, view)
+module Param exposing (
+    Model, Msg, Id, BoolP, StringP
+  , init, get, update, updateOne, viewList, viewBool, viewString
+  -- , updateModel, view)
+  )
 
 import Html exposing (..)
 import Html.App
@@ -22,6 +26,11 @@ import Http exposing (..)
 import Task
 import Json.Decode as JD exposing ((:=))
 import Json.Encode
+
+
+type alias BoolP   = Model Bool
+type alias StringP = Model String
+
 
 {-- }
 main =
@@ -61,6 +70,19 @@ init id name val =
 --init name val =
   --(Model "" name val True, Cmd.none)
 
+
+get : List (Model vt) -> Id -> Maybe (Model vt)
+get models id =
+  List.head ( List.filter (\m -> m.id == id) models )
+
+{-- }
+getOne : Model vt -> Id -> Maybe (Model vt)
+getOne model id =
+  if model.id == id then
+    Just model
+  else
+    Nothing
+--}
 
 -- UPDATE
 
@@ -122,10 +144,18 @@ view model =
       div [] (viewList model)
 --}
 
-viewBool : (Model Bool) -> Html (Msg Bool)
-viewBool model =
-  div [] --(viewBoolList model)
-    (viewList model [ input [ type' "checkbox", checked model.value, onCheck Edit ] [] ])
+-- viewBool : Maybe (Model Bool) -> Html (Msg Bool)
+viewBool : Maybe BoolP -> Html (Msg Bool)
+viewBool optModel =
+  let
+    dc =
+      case optModel of
+        Nothing ->
+          []
+        Just model ->
+          viewList model [ input [ type' "checkbox", checked model.value, onCheck Edit ] [] ]
+  in
+    div [] dc
 
 {--}
 viewString : (Model String) -> Html (Msg String)
