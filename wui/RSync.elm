@@ -16,12 +16,6 @@ module RSync exposing (Model, Msg, init, update, view)
 
 import Param
 
---type alias BoolV = Param.BoolV
-
---type alias StringV = Param.StringV
-
--- import StringV
-
 import Html exposing (..)
 import Html.App
 import Html.Events exposing (..)
@@ -33,7 +27,7 @@ import Json.Encode
 
 main =
   Html.App.program {
-    init = init,  -- ( init "To Be or Not To Be" ),
+    init = init,
     view = view,
     update = update,
     subscriptions = subscriptions
@@ -42,22 +36,19 @@ main =
 
 -- MODEL
 
+type alias BoolP = Param.Model Bool
+type alias StringP = Param.Model String
+
 type alias Model =
   { id        : String
-  , srcFolder : Param.Model String
-  --, verbose   : Param.Model Bool
-  , flags     : List (Param.Model Bool)
+  , srcFolder : StringP
+  , flags     : List BoolP
   --, visible   : Bool
   }
 
 init : (Model, Cmd Msg)
 init =
   let
-    --( verbV, verbC ) = Param.init "verbose" False
-    --vCM = Cmd.map (VerboseMsg verbV) verbC
-
-    --( sfV, sfC ) = Param.init "source folder" ""
-    --sfCM = Cmd.map (SrcFolderMsg sfV) sfC
     sfV = Param.init "srcF" "source folder" ""
 
     flags = [
@@ -65,6 +56,8 @@ init =
     , Param.init "r" "recursive" False
     ]
 
+    --vCM = Cmd.map (VerboseMsg verbV) verbC
+    --sfCM = Cmd.map (SrcFolderMsg sfV) sfC
     --cmd = Cmd.batch ([vCM, sfCM])
   in
     ( Model "" sfV flags
@@ -77,7 +70,7 @@ init =
 
 type Msg =
     ChangeFlag   Param.Id   (Param.Msg Bool)
-  | SrcFolderMsg (Param.Model String) (Param.Msg String)
+  | SrcFolderMsg StringP    (Param.Msg String)
 
 --    Save
 --  | Edit
@@ -95,8 +88,8 @@ update msg model =
           nCmd = Cmd.map (ChangeFlag idx) (Cmd.batch nCmds)
         in
           ( { model | flags = newFlags -- (Debug.log model.label nVal)
-            --}, Cmd.map (VerboseMsg newVerb) vCmd )
-            }, nCmd )
+            }, nCmd
+          )
 
       SrcFolderMsg sfBV sMsg ->
         let
@@ -105,7 +98,6 @@ update msg model =
         in
           ( { model | srcFolder = newSF
             }, Cmd.map (SrcFolderMsg newSF) sfCmd )
-            --}, Cmd.none )
 
 {-- }
       Save ->
@@ -120,8 +112,6 @@ update msg model =
           ( Debug.log "Ok" newModel, saveTag newModel )
 { --}
 
---updateFlag : Idx  model =
---updateFlag msg model =
 
 
 
@@ -131,22 +121,19 @@ view : Model -> Html Msg
 view model =
   let
     --vv = Debug.log "verbose" model.verbose
-    --verbView = Html.App.map (VerboseMsg model.verbose) (Param.viewBool vv)
     flagsView = List.map viewFlag model.flags
 
     sfv = Debug.log "src folder" model.srcFolder
-    --sfView = Html.App.map (SrcFolderMsg model.srcFolder) (StringV.view sfv)
     sfView = Html.App.map (SrcFolderMsg model.srcFolder) (Param.viewString sfv)
 
   in
-    div [] ([
+    div [] ( [
       h1 [] [ text "RSync" ]
     , sfView
-    --, verbView
-    ] ++ flagsView)
+    ] ++ flagsView )
 
 
-viewFlag : Param.Model Bool -> Html Msg
+viewFlag : BoolP -> Html Msg
 viewFlag flag =
   Html.App.map (ChangeFlag flag.id) (Param.viewBool flag)
 
