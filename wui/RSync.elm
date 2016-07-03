@@ -23,7 +23,7 @@ import Html.Attributes exposing (..)
 import Http exposing (..)
 import Task
 import Json.Decode as JD exposing ((:=))
-import Json.Encode
+import Json.Encode as JE
 
 main =
   Html.App.program {
@@ -101,9 +101,18 @@ update msg model =
           )
 
       Run ->
-         ( { model | output = toString model }
-         , Cmd.none
-         )
+        let
+          flags = JE.list ( List.map ( Param.asJsonValue JE.bool ) model.flags )
+          strings = JE.list ( List.map ( Param.asJsonValue JE.string ) model.strings )
+          data = JE.encode 2 ( JE.object [
+              ( "flags", flags )
+            , ( "strings", strings )
+          ] )
+        in
+            ( { model
+                | output = data  -- JE.encode 2 ( JE.list ( List.map ( Param.asJsonValue JE.bool ) model.flags ) )
+              }, Cmd.none
+            )
 
 {-- }
       SrcFolderMsg sfBV sMsg ->

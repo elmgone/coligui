@@ -21,6 +21,7 @@ module Param exposing (
   --, viewBool
   , viewString
   -- , updateModel, view)
+  , asJsonValue
   )
 
 import Html exposing (..)
@@ -30,7 +31,7 @@ import Html.Attributes exposing (..)
 import Http exposing (..)
 import Task
 import Json.Decode as JD exposing ((:=))
-import Json.Encode
+import Json.Encode as JE
 
 
 {-- }
@@ -64,23 +65,18 @@ init : Id -> String -> valType -> Model valType
 init id name val =
   Model id name val True
 
---init : String -> valType -> (Model valType, Cmd (Msg valType))
---init name val =
-  --(Model "" name val True, Cmd.none)
-
-
 get : List (Model vt) -> Id -> Maybe (Model vt)
 get models id =
   List.head ( List.filter (\m -> m.id == id) models )
 
-{-- }
-getOne : Model vt -> Id -> Maybe (Model vt)
-getOne model id =
-  if model.id == id then
-    Just model
-  else
-    Nothing
---}
+asJsonValue : ( vt -> JE.Value ) -> Model vt -> JE.Value
+asJsonValue toValue param =
+  JE.object [
+    ( "id", JE.string param.id )
+  , ( "value", toValue param.value )
+  , ( "visible", JE.bool param.visible )
+  ]
+
 
 -- UPDATE
 
