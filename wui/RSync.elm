@@ -42,6 +42,7 @@ type alias Model =
   , flags     : List BoolP
   , strings   : List StringP
   --, visible   : Bool
+  , output    : String
   }
 
 init : (Model, Cmd Msg)
@@ -58,7 +59,7 @@ init =
       Param.init "srcF" "source folder" ""
     ]
   in
-    ( Model "" flags strings
+    ( Model "" flags strings ""
     , Cmd.none )
 
 
@@ -68,6 +69,7 @@ type Msg =
     ChangeFlag   Param.Id   (Param.Msg Bool)
 --  | SrcFolderMsg StringP    (Param.Msg String)
   | ChangeString Param.Id    (Param.Msg String)
+  | Run
 
 --    Save
 --  | Edit
@@ -98,6 +100,11 @@ update msg model =
             }, nCmd
           )
 
+      Run ->
+         ( { model | output = toString model }
+         , Cmd.none
+         )
+
 {-- }
       SrcFolderMsg sfBV sMsg ->
         let
@@ -120,14 +127,21 @@ view model =
   in
     div [] [
       h1 [] [
-        --text "RSync"
         a [ href "http://localhost:33333" ] [ text "RSync" ]
       ]
     , table [] [
-        flg "v"         -- viewOptFlagTr   (flg "v")      -- (Param.get model.flags   "v")
-      , str "srcF"      -- viewOptStringTr (str "srcF")   -- (Param.get model.strings "srcF")
-      , flg "r"         -- viewOptFlagTr   (flg "r")      -- (Param.get model.flags   "r")
+        flg "v"
+      , str "srcF"
+      , flg "r"
       ]
+    , button [ onClick Run ] [ text "Run" ]
+    , h5 [] [ text "Debug" ]
+    , ul [] [
+        li [] [ text (toString model.strings) ]
+      , li [] [ text (toString model.flags) ]
+    ]
+    , h4 [] [ text "Output" ]
+    , text model.output
     ]
 
 
