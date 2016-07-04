@@ -15,6 +15,7 @@
 module RSync exposing (Model, Msg, init, update, view)
 
 import Param exposing (BoolP, StringP, BoolM, StringM)
+import Widget as W
 
 import Html exposing (..)
 import Html.App
@@ -43,6 +44,9 @@ type alias Model =
   , strings   : List StringP
   --, visible   : Bool
   , output    : String
+  
+  -- widgets
+  , werbose   : W.Node
   }
 
 init : (Model, Cmd Msg)
@@ -59,7 +63,7 @@ init =
       Param.init "srcF" "source folder" ""
     ]
   in
-    ( Model "" flags strings ""
+    ( Model "" flags strings "" (W.initBool "w" "Werbose" False)
     , Cmd.none )
 
 
@@ -71,6 +75,8 @@ type Msg =
   | ChangeString Param.Id    (Param.Msg String)
   | Run
 
+  | CallWidget W.Id W.Msg
+
 --    Save
 --  | Edit
 --  | EditPath String
@@ -80,6 +86,16 @@ type Msg =
 update : Msg -> Model -> (Model, Cmd Msg)
 update msg model =
     case msg of
+      CallWidget wId wMsg ->
+        let
+          -- FIXME: don't ignore wId - it must work for all flags, not just 'werbose'
+          (newWerbose, wCmd) = W.update wMsg model.werbose
+          cmd = Cmd.map (CallWidget wId) wCmd
+        in
+          ( { model | werbose = newWerbose
+            }, cmd
+          )
+
       ChangeFlag idx bMsg ->
         let
           newFlagsNCmds = List.map (Param.updateOne idx bMsg) model.flags
@@ -133,13 +149,20 @@ view model =
     str id = viewOptStringTr (Param.get model.strings id)
 
     --sfP = Debug.log "src folder" (Param.get model.strings "srcF")
+    
+    werboseVL = List.map ( Html.App.map ( CallWidget "w" ) ) ( W.viewList model.werbose )
   in
     div [] [
       h1 [] [
         a [ href "http://localhost:33333" ] [ text "RSync" ]
       ]
+    --, div [] werboseVL
+    --, table [] [ tr [] ( List.map (\e -> td [] [ e ]) werboseVL ) ]
+    
     , table [] [
-        flg "v"
+        tr [] ( List.map (\e -> td [] [ e ]) werboseVL )
+        
+      , flg "v"
       , str "srcF"
       , flg "r"
       ]

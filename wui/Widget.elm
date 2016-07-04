@@ -27,8 +27,10 @@ type Value
   = BoolValue Bool
   | StringValue String
 
+type alias Id = String
+
 type alias Node =
-  { id       : String
+  { id       : Id
   , label    : String
   , value    : Value
   , isActive : Bool
@@ -37,6 +39,10 @@ type alias Node =
 
 type Kids
   = KidsList ( List Node )
+
+initBool : Id -> String -> Bool -> Node
+initBool id label flag =
+  Node id label (BoolValue flag) True (KidsList [])
 
 kids : Node -> List Node
 kids node =
@@ -64,7 +70,7 @@ update : Msg -> Node -> ( Node, Cmd Msg )
 update msg node =
     case msg of
       Edit val ->
-        ( { node | value = val  -- (Debug.log model.label val)
+        ( { node | value = (Debug.log node.label val)
           }, Cmd.none )
 
       Activate active ->
