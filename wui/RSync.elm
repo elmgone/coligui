@@ -46,8 +46,9 @@ type alias Model =
   , output    : String
   
   -- widgets
-  , werbose   : W.Node
+  --, werbose   : W.Node
   , root      : W.Node
+  , nodes     : List W.Node
   }
 
 init : (Model, Cmd Msg)
@@ -65,10 +66,14 @@ init =
     ]
     
     werbose = W.initBool "w" "Werbose" False
+    srcF = W.initString "srcF" "Source Folder"
+    
+    ( root, nodes ) = W.initRoot "RSync" [werbose, srcF]
   in
     ( Model "" flags strings ""
-        werbose  -- (W.initBool "w" "Werbose" False)
-        (W.initRoot "RSync" [werbose])   --  (W.initBool "w" "Werbose" False))
+        --werbose
+        --(W.initRoot "RSync" [werbose, srcF])
+        root nodes
     , Cmd.none )
 
 
@@ -88,18 +93,69 @@ type Msg =
 --  | CreateSucceed Model
 --  | CreateFail Http.Error
 
+
+-- W.update : W.Msg -> W.Node -> ( W.Node, Cmd W.Msg )
+updateNode : W.Id -> W.Msg -> W.Node -> ( W.Node, Cmd W.Msg )
+updateNode id msg node =
+  if id == node.id then
+    W.update msg node
+  else
+    ( node, Cmd.none )
+
 update : Msg -> Model -> (Model, Cmd Msg)
 update msg model =
     case msg of
+      -- Modify id msg ->
+      --   { model | counters = List.map (updateHelp id msg) counters }
+      CallWidget wId wMsg ->
+        let
+          updateNode : W.Node -> W.Node
+          updateNode node =
+            if wId == node.id then
+              fst ( W.updateNode wId wMsg node )
+            else
+              node
+              
+          newRoot = W.mapUpdate updateNode model.root
+        in
+          ( { model | root = newRoot
+            }, Cmd.none
+          )
+
+{--
+      CallWidget wId wMsg ->
+        let
+          (newRoot, wCmd) = W.updateNode wMsg wNode
+          
+          -- FIXME: don't ignore wId - it must work for all flags, not just 'werbose'
+          --(newWerbose, wCmd) = W.update wMsg model.werbose
+          --cmd = Cmd.map (CallWidget wId) wCmd
+          (newRoot, wCmd) = W.updateNode wId wMsg model.root
+          --(newRoot, wCmd) = W.update wMsg wNode
+          
+          newNodes = List.map (updateNode wId) model.nodes
+          cmd = Cmd.map (CallWidget wNode) wCmd
+        in
+          --( { model | werbose = newWerbose
+          ( { model | root = newRoot
+            }, cmd
+          )
+--}
+
+{--
       CallWidget wId wMsg ->
         let
           -- FIXME: don't ignore wId - it must work for all flags, not just 'werbose'
-          (newWerbose, wCmd) = W.update wMsg model.werbose
+          --(newWerbose, wCmd) = W.update wMsg model.werbose
+          --cmd = Cmd.map (CallWidget wId) wCmd
+          (newRoot, wCmd) = W.updateNode wId wMsg model.root
           cmd = Cmd.map (CallWidget wId) wCmd
         in
-          ( { model | werbose = newWerbose
+          --( { model | werbose = newWerbose
+          ( { model | root = newRoot
             }, cmd
           )
+--}
 
       ChangeFlag idx bMsg ->
         let
@@ -155,10 +211,39 @@ view model =
 
     --sfP = Debug.log "src folder" (Param.get model.strings "srcF")
     
-    werboseVL = List.map ( Html.App.map ( CallWidget model.werbose.id ) ) ( W.viewList model.werbose )
-    rootVL = List.map ( Html.App.map ( CallWidget model.root.id ) ) ( W.viewList model.root )
+    --werboseVL = List.map ( Html.App.map ( CallWidget model.werbose.id ) ) ( W.viewList model.werbose )
+    --rootVL = List.map ( Html.App.map ( CallWidget model.root.id ) ) ( W.viewList model.root )
+
+{------------------
+        let
+          updateNode : W.Node -> W.Node
+          updateNode node =
+            if wId == node.id then
+              fst ( W.updateNode wId wMsg node )
+            else
+              node
+              
+          newRoot = W.map updateNode model.root
+        in
+          ( { model | root = newRoot
+            }, Cmd.none
+          )
+------------------
+    viewNode : W.Node -> W.Node
+    viewNode node =
+      if wId == node.id then
+        fst ( W.view wId wMsg node )
+      else
+        node
+------------------}
+
+    
+    rootView = W.mapView ( CallWidget model.root.id ) model.root
   in
-    Html.App.map ( CallWidget model.root.id ) ( W.view model.root )
+    rootView
+    --Html.App.map ( CallWidget model.root.id ) ( W.view model.root )
+    --W.view model.root
+    --Html.App.map ( \ _ -> Cmd.none ) ( W.view model.root )
 
 {--    
     div [] [
