@@ -47,6 +47,7 @@ type alias Model =
   
   -- widgets
   , werbose   : W.Node
+  , root      : W.Node
   }
 
 init : (Model, Cmd Msg)
@@ -62,8 +63,12 @@ init =
     strings = [
       Param.init "srcF" "source folder" ""
     ]
+    
+    werbose = W.initBool "w" "Werbose" False
   in
-    ( Model "" flags strings "" (W.initBool "w" "Werbose" False)
+    ( Model "" flags strings ""
+        werbose  -- (W.initBool "w" "Werbose" False)
+        (W.initRoot "RSync" [werbose])   --  (W.initBool "w" "Werbose" False))
     , Cmd.none )
 
 
@@ -150,8 +155,12 @@ view model =
 
     --sfP = Debug.log "src folder" (Param.get model.strings "srcF")
     
-    werboseVL = List.map ( Html.App.map ( CallWidget "w" ) ) ( W.viewList model.werbose )
+    werboseVL = List.map ( Html.App.map ( CallWidget model.werbose.id ) ) ( W.viewList model.werbose )
+    rootVL = List.map ( Html.App.map ( CallWidget model.root.id ) ) ( W.viewList model.root )
   in
+    Html.App.map ( CallWidget model.root.id ) ( W.view model.root )
+
+{--    
     div [] [
       h1 [] [
         a [ href "http://localhost:33333" ] [ text "RSync" ]
@@ -160,7 +169,7 @@ view model =
     --, table [] [ tr [] ( List.map (\e -> td [] [ e ]) werboseVL ) ]
     
     , table [] [
-        tr [] ( List.map (\e -> td [] [ e ]) werboseVL )
+        tr [] ( List.map (\e -> td [] [ e ]) ( rootVL ++ werboseVL ) )
         
       , flg "v"
       , str "srcF"
@@ -175,6 +184,7 @@ view model =
     , h4 [] [ text "Output" ]
     , text model.output
     ]
+--}
 
 
 {--}
