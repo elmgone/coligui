@@ -14,7 +14,6 @@
 
 module RSync exposing (Model, Msg, init, update, view)
 
---import Param exposing (BoolP, StringP, BoolM, StringM)
 import Widget as W
 
 import Html exposing (..)
@@ -46,9 +45,53 @@ type alias Model =
   , root      : W.Node
   }
 
+
+--   Local:  rsync [OPTION...] SRC... [DEST]
+--
+--   Access via remote shell:
+--     Pull: rsync [OPTION...] [USER@]HOST:SRC... [DEST]
+--     Push: rsync [OPTION...] SRC... [USER@]HOST:DEST
+--
+--   Access via rsync daemon:
+--     Pull: rsync [OPTION...] [USER@]HOST::SRC... [DEST]
+--           rsync [OPTION...] rsync://[USER@]HOST[:PORT]/SRC... [DEST]
+--     Push: rsync [OPTION...] SRC... [USER@]HOST::DEST
+--           rsync [OPTION...] SRC... rsync://[USER@]HOST[:PORT]/DEST
+--
+--   Usages with just one SRC arg and no DEST arg will list the source files instead of copying.
+
 init : (Model, Cmd Msg)
 init =
   let
+    folder id name =
+      W.initString (id ++ "F") (name ++ " Folder")
+    host id name =
+      --W.initString (destId++"H") (destName ++ " Host")
+      W.initString (id ++ "H") (name ++ " Host")
+    user id name =
+      --W.initString (destId++"U") (destName ++ " User")
+      W.initString (id ++ "U") (name ++ " User")
+    nwport id name =
+      --W.initString (destId++"P") (destName ++ " Port")
+      W.initString (id ++ "P") (name ++ " Port")
+
+    localFolder id name =
+      folder (id ++ "L") (name ++ " Local")
+
+    remoteShell id name =
+      W.initVer (id ++ "RS") (name ++ " Remote Shell") [
+        user    (id ++ "RS") (name ++ " Remote Shell")
+      , host    (id ++ "RS") (name ++ " Remote Shell")
+      , folder  (id ++ "RS") (name ++ " Remote Shell")
+      ]
+    
+    srcLocation =
+      W.initSwitch "src" [
+        localFolder "src" "Source"
+      , remoteShell "src" "Source"
+      ]
+
+  {-----------------------------------------------------
     werbose = W.initBool "w" "Werbose" False
     srcF    = W.initString "srcF" "Source Folder"
     verG1   = W.initVer "verG1" [ werbose, srcF ]
@@ -58,8 +101,11 @@ init =
     horG1   = W.initHor "horG1" [ recursive, tgtF ]
     
     switch1   = W.initSwitch "switch1" [verG1, horG1]
-    
+
     ( root, nodes ) = W.initRoot "RSync" [switch1]
+  -----------------------------------------------------}
+    
+    ( root, nodes ) = W.initRoot "RSync" [srcLocation]
   in
     ( Model "" "" root
     , Cmd.none )

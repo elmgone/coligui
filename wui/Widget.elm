@@ -61,13 +61,15 @@ initRoot label kidsList =
   in
     ( rootNode, rootNode :: grandKids )
 
-initVer : String -> List Node -> Node
-initVer id kidsList =
-  Node id "Vertical Group" VerGroup (KidsList kidsList)
+initVer : String -> String -> List Node -> Node
+initVer id label kidsList =
+  --Node id "Vertical Group" VerGroup (KidsList kidsList)
+  Node id label VerGroup (KidsList kidsList)
 
-initHor : String -> List Node -> Node
-initHor id kidsList =
-  Node id "Horizontal Group" HorGroup (KidsList kidsList)
+initHor : String -> String -> List Node -> Node
+initHor id label kidsList =
+  --Node id "Horizontal Group" HorGroup (KidsList kidsList)
+  Node id label HorGroup (KidsList kidsList)
 
 initSwitch : String -> List Node -> Node
 initSwitch id kidsList =
