@@ -100,19 +100,6 @@ type Msg =
     Modify Id Value
   --| Activate Bool
 
-{--
-update : Msg -> Node -> ( Node, Cmd Msg )
-update msg node =
-    case msg of
-      Modify val ->
-        ( { node | value = Debug.log node.label val
-          }, Cmd.none )
-
---      Activate active ->
---        ( { node | isActive = active  -- (Debug.log (model.label ++ " visible") vis)
---          }, Cmd.none )
---}
-
 update : Msg -> Node -> ( Node, Cmd Msg )
 update msg node =
   let
@@ -129,7 +116,7 @@ update msg node =
           ( node, Cmd.none )
 
 
-{-- }
+{------------------------------------------------------------- }
 updateNode : Id -> Msg -> Node -> ( Node, Cmd Msg )
 updateNode id msg node =
   let
@@ -151,7 +138,7 @@ updateNode id msg node =
         , cmd
         )
 
---}
+---------------------------------------------------------------}
 
 mapUpdate : (Node -> (Node, Cmd a)) -> Node -> (Node, Cmd a)
 mapUpdate f node =
@@ -162,21 +149,6 @@ mapUpdate f node =
     ( { newNode | kids = KidsList newKids }
     , Cmd.batch ( cmd :: cmds ) )
 
-{----
--- mapUpdate : (Node -> (Node, Cmd a)) -> Node -> (Node, Cmd a)
---map : (Node -> List transKid -> result) -> Node -> result
-map : (Node -> List a -> (Node, b, a)) -> Node -> (Node, b, a)
-map f node =
-  let
-    kidsResult = List.map (map f) (kids node)
-    newNode = f node kidsResult
-  in
-    { newNode | kids = KidsList newKids }
-----}
-
-
---mapView : (Node -> List transKid -> result) -> Node -> Html Msg
---mapView f node =
 
 --mapView : Node -> Html Msg
 mapView wMsg2Msg node =
@@ -192,10 +164,6 @@ mapView wMsg2Msg node =
     htmlResult = table [] kidsResult
   in
     Html.App.map wMsg2Msg htmlResult
-    --htmlResult
-    --case htmlResult of
-      --Html msg ->
-        --wMsg2Msg msg
 
 
 -- VIEW
@@ -204,11 +172,9 @@ viewTR : Node -> Html Msg
 viewTR node =
   case node.value of
     BoolValue flag ->
-      -- notImplemented node "view BoolValue"
       node2TR node
 
     StringValue str ->
-      -- notImplemented node "view StringValue"
       node2TR node
 
     RootCmd ->
@@ -229,7 +195,7 @@ node2TR node =
     tr [] tds_l
 
 
-{--}
+{-----------------------------------------------}
 viewList : Node -> List (Html Msg)
 viewList node =
   let
@@ -245,7 +211,7 @@ viewList node =
     [ label [] [ text node.label ]
     , inputElement
     ]
---}
+-----------------------------------------------}
 
 editBool id b =
   Modify id (BoolValue b)
@@ -259,7 +225,7 @@ notImplemented node errDesr =
 
 
 
-{-- }
+{------------------------------------------------ }
 view : Node -> Html Msg
 view node =
   case node.value of
@@ -280,5 +246,5 @@ view node =
             --( List.map node2TR ( kids node ) )
             ( List.map view ( kids node ) )
           ]
---}
+--------------------------------------------------}
 

@@ -39,23 +39,22 @@ main =
 
 type alias Model =
   { id        : String
-  --, srcFolder : StringP
-  , flags     : List BoolP
-  , strings   : List StringP
+  --, flags     : List BoolP
+  --, strings   : List StringP
   --, visible   : Bool
   , output    : String
   
   -- widgets
-  --, werbose   : W.Node
   , root      : W.Node
-  , nodes     : List W.Node
+  --, nodes     : List W.Node
   }
 
 init : (Model, Cmd Msg)
 init =
   let
-    sfV = Param.init "srcF" "source folder" ""
+    --sfV = Param.init "srcF" "source folder" ""
 
+{-------------------------
     flags = [
       Param.init "v" "verbose" False
     , Param.init "r" "recursive" False
@@ -64,29 +63,27 @@ init =
     strings = [
       Param.init "srcF" "source folder" ""
     ]
+-------------------------}
     
     werbose = W.initBool "w" "Werbose" False
     srcF = W.initString "srcF" "Source Folder"
     
     ( root, nodes ) = W.initRoot "RSync" [werbose, srcF]
   in
-    ( Model "" flags strings ""
-        --werbose
-        --(W.initRoot "RSync" [werbose, srcF])
-        root nodes
+    --( Model "" flags strings ""
+    ( Model "" ""
+        root -- nodes
     , Cmd.none )
 
 
 -- UPDATE
 
 type Msg =
-    ChangeFlag   Param.Id   (Param.Msg Bool)
---  | SrcFolderMsg StringP    (Param.Msg String)
-  | ChangeString Param.Id    (Param.Msg String)
-  | Run
+    CallWidget W.Msg
+--  | ChangeFlag   Param.Id   (Param.Msg Bool)
+--  | ChangeString Param.Id    (Param.Msg String)
+--  | Run
 
-  --| CallWidget W.Id W.Msg
-  | CallWidget W.Msg
 
 --    Save
 --  | Edit
@@ -95,67 +92,20 @@ type Msg =
 --  | CreateFail Http.Error
 
 
-{----------------
--- W.update : W.Msg -> W.Node -> ( W.Node, Cmd W.Msg )
-updateNode : W.Id -> W.Msg -> W.Node -> ( W.Node, Cmd W.Msg )
-updateNode id msg node =
-  if id == node.id then
-    W.update msg node
-  else
-    ( node, Cmd.none )
-----------------}
 
 update : Msg -> Model -> (Model, Cmd Msg)
 update msg model =
     case msg of
-      -- CallWidget wId wMsg ->
       CallWidget wMsg ->
         let
-          --newRoot = W.mapUpdate updateNode model.root
-          --updateNode = W.updateNode wId wMsg
           updateNode = W.update wMsg
           ( newRoot, cmd ) = W.mapUpdate updateNode model.root
         in
           ( { model | root = newRoot
-            -- }, Cmd.map (CallWidget wId) cmd  -- Cmd.none
-            }, Cmd.map CallWidget cmd  -- Cmd.none
+            }, Cmd.map CallWidget cmd
           )
 
-{--
-      CallWidget wId wMsg ->
-        let
-          (newRoot, wCmd) = W.updateNode wMsg wNode
-          
-          -- FIXME: don't ignore wId - it must work for all flags, not just 'werbose'
-          --(newWerbose, wCmd) = W.update wMsg model.werbose
-          --cmd = Cmd.map (CallWidget wId) wCmd
-          (newRoot, wCmd) = W.updateNode wId wMsg model.root
-          --(newRoot, wCmd) = W.update wMsg wNode
-          
-          newNodes = List.map (updateNode wId) model.nodes
-          cmd = Cmd.map (CallWidget wNode) wCmd
-        in
-          --( { model | werbose = newWerbose
-          ( { model | root = newRoot
-            }, cmd
-          )
---}
-
-{--
-      CallWidget wId wMsg ->
-        let
-          -- FIXME: don't ignore wId - it must work for all flags, not just 'werbose'
-          --(newWerbose, wCmd) = W.update wMsg model.werbose
-          --cmd = Cmd.map (CallWidget wId) wCmd
-          (newRoot, wCmd) = W.updateNode wId wMsg model.root
-          cmd = Cmd.map (CallWidget wId) wCmd
-        in
-          --( { model | werbose = newWerbose
-          ( { model | root = newRoot
-            }, cmd
-          )
---}
-
+{--------------------------------------
       ChangeFlag idx bMsg ->
         let
           newFlagsNCmds = List.map (Param.updateOne idx bMsg) model.flags
@@ -175,6 +125,7 @@ update msg model =
           ( { model | strings = newStrings
             }, nCmd
           )
+--------------------------------------
 
       Run ->
         let
@@ -189,61 +140,24 @@ update msg model =
                 | output = data  -- JE.encode 2 ( JE.list ( List.map ( Param.asJsonValue JE.bool ) model.flags ) )
               }, Cmd.none
             )
+--------------------------------------}
 
-{-- }
-      SrcFolderMsg sfBV sMsg ->
-        let
-          (newSF, sfCmd) = Param.updateOne "srcF" sMsg sfBV
-        in
-          ( { model | srcFolder = newSF }
-          , Cmd.map (SrcFolderMsg newSF) sfCmd
-          )
---}
 
 -- VIEW
 
 view : Model -> Html Msg
 view model =
   let
-    flg id = viewOptFlagTr   (Param.get model.flags id)
-    str id = viewOptStringTr (Param.get model.strings id)
+    --flg id = viewOptFlagTr   (Param.get model.flags id)
+    --str id = viewOptStringTr (Param.get model.strings id)
 
-    -- rootView = W.mapView ( CallWidget model.root.id ) model.root
     rootView = W.mapView  CallWidget  model.root
   in
     rootView
-    --Html.App.map ( CallWidget model.root.id ) ( W.view model.root )
-    --W.view model.root
-    --Html.App.map ( \ _ -> Cmd.none ) ( W.view model.root )
-
-{--    
-    div [] [
-      h1 [] [
-        a [ href "http://localhost:33333" ] [ text "RSync" ]
-      ]
-    --, div [] werboseVL
-    --, table [] [ tr [] ( List.map (\e -> td [] [ e ]) werboseVL ) ]
-    
-    , table [] [
-        tr [] ( List.map (\e -> td [] [ e ]) ( rootVL ++ werboseVL ) )
-        
-      , flg "v"
-      , str "srcF"
-      , flg "r"
-      ]
-    , button [ onClick Run ] [ text "Run" ]
-    , h5 [] [ text "Debug" ]
-    , ul [] [
-        li [] [ text (toString model.strings) ]
-      , li [] [ text (toString model.flags) ]
-    ]
-    , h4 [] [ text "Output" ]
-    , text model.output
-    ]
---}
 
 
-{--}
+
+{-- }
 viewOptFlagTr : Maybe BoolP -> Html Msg
 viewOptFlagTr optFlag =
   case optFlag of
@@ -253,7 +167,7 @@ viewOptFlagTr optFlag =
       Html.App.map (ChangeFlag flag.id) (Param.viewTR Param.inputBool flag)
 --}
 
-{--}
+{-- }
 viewOptStringTr : Maybe StringP -> Html Msg
 viewOptStringTr optStr =
   case optStr of
@@ -261,16 +175,6 @@ viewOptStringTr optStr =
       div [] []
     Just str ->
       Html.App.map (ChangeString str.id) (Param.viewTR Param.inputString str)
---}
-
-{-- }
-viewOptFlag : Maybe BoolP -> Html Msg
-viewOptFlag optFlag =
-  case optFlag of
-    Nothing ->
-      div [] []
-    Just flag ->
-      Html.App.map (ChangeFlag flag.id) (Param.viewOneOpt Param.inputBool optFlag)
 --}
 
 {-- }
