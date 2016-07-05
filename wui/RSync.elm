@@ -50,9 +50,14 @@ init : (Model, Cmd Msg)
 init =
   let
     werbose = W.initBool "w" "Werbose" False
-    srcF = W.initString "srcF" "Source Folder"
+    srcF    = W.initString "srcF" "Source Folder"
+    verG1   = W.initVer "verG1" [ werbose, srcF ]
     
-    ( root, nodes ) = W.initRoot "RSync" [werbose, srcF]
+    recursive = W.initBool "r" "Recursive" False
+    tgtF    = W.initString "tgtF" "Target Folder"
+    horG1   = W.initHor "horG1" [ recursive, tgtF ]
+    
+    ( root, nodes ) = W.initRoot "RSync" [verG1, horG1]
   in
     ( Model "" "" root
     , Cmd.none )
@@ -78,30 +83,18 @@ update msg model =
         let
           updateNode = W.update wMsg
           ( newRoot, cmd ) = W.mapUpdate updateNode model.root
-          --( newRoot, cmd ) = W.update wMsg model.root
         in
-          ( { model | root = newRoot
-            }, Cmd.map CallWidget cmd
+          ( { model | root = newRoot }
+          , Cmd.map CallWidget cmd
           )
 
 {--------------------------------------}
       Run ->
         let
-{--------------------------------------
-          flags = JE.list ( List.map ( Param.asJsonValue JE.bool ) model.flags )
-          strings = JE.list ( List.map ( Param.asJsonValue JE.string ) model.strings )
-          
-          data = JE.encode 2 ( JE.object [
-              ( "flags", flags )
-            , ( "strings", strings )
-          ] )
---------------------------------------}
-          
           data = JE.encode 2 ( W.jsonValue model.root )
         in
-            ( { model
-                | output = data  -- JE.encode 2 ( JE.list ( List.map ( Param.asJsonValue JE.bool ) model.flags ) )
-              }, Cmd.none
+            ( { model | output = data }
+            , Cmd.none
             )
 --------------------------------------}
 
@@ -112,11 +105,13 @@ view : Model -> Html Msg
 view model =
   table [] [
     Html.App.map CallWidget (W.viewTR model.root)
-  , button [ onClick Run ] [ text "Run" ]
-  , h3 [] [ text "Output" ]
-  , text model.output
-  , h4 [] [ text "debug" ]
-  , text (JE.encode 2 ( W.jsonValue model.root ))
+  , tr [] [ td [] [
+      button [ onClick Run ] [ text "Run" ]
+    , h3 [] [ text "Output" ]
+    , text model.output
+    , h4 [] [ text "debug" ]
+    , text (JE.encode 2 ( W.jsonValue model.root ))
+    ] ]
 
   {----------------------------------------- }
   , ul [] [
@@ -125,13 +120,6 @@ view model =
   -----------------------------------------}
   
   ]
-
-{----------------------------------------- }
-  Html.App.map CallWidget (table [] [
-    W.viewTR model.root
-  , button [ onClick Run ] [ text "Run" ]
-  ])
------------------------------------------}
 
 
 {----------------------------------------- }

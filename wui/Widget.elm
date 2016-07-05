@@ -14,7 +14,8 @@
 
 module Widget exposing (
     Node, Msg
-  , initRoot, initBool, initString
+  , initRoot, initVer, initHor
+  , initBool, initString
   , update, mapUpdate
   , viewTR
   , jsonValue
@@ -34,6 +35,9 @@ type Value
   = BoolValue Bool
   | StringValue String
   | RootCmd
+  | VerGroup
+  | HorGroup
+  --| Tabs Id
 
 type alias Id = String
 
@@ -55,27 +59,23 @@ initRoot label kidsList =
     grandKids = flatKidsList rootNode
   in
     ( rootNode, rootNode :: grandKids )
-    
 
-flatKidsList : Node -> List Node
-flatKidsList node =
-  List.foldl List.append [] (List.map flatKidsList (kids node))
-
-get : Id -> List Node -> Node
-get id nodes =
+initVer : String -> List Node -> Node  -- ( Node, List Node )
+initVer id kidsList =
+  Node id "Vertical Group" VerGroup (KidsList kidsList)
+  {--------------
   let
-    optNode = List.head ( List.filter (\ n -> id == n.id) nodes )
+    verNode = Node id "Vertical Group" VerGroup (KidsList kidsList)
   in
-    case optNode of
-      Nothing ->
-        initBool id "NOT FOUND" False
-      Just node ->
-        node
+    verNode
+  --------------}
 
+initHor : String -> List Node -> Node
+initHor id kidsList =
+  Node id "Horizontal Group" HorGroup (KidsList kidsList)
 
 initBool : Id -> String -> Bool -> Node
 initBool id label flag =
-  -- Node id label (BoolValue flag) True (KidsList [])
   Node id label (BoolValue flag) (KidsList [])
 
 initString : Id -> String -> Node
@@ -88,15 +88,13 @@ kids node =
     KidsList kids_l ->
       kids_l
 
+flatKidsList : Node -> List Node
+flatKidsList node =
+  List.foldl List.append [] (List.map flatKidsList (kids node))
+
 jsonValue : Node -> JE.Value
 jsonValue node =
   let
-    {------------------------------------
-    jsonTuples = [
-      ( "id", JE.string node.id )
-    --, ( "active", JE.bool node.isActive )
-    ]
-    ------------------------------------}
     val =
       case node.value of
         BoolValue b ->
@@ -104,6 +102,10 @@ jsonValue node =
         StringValue s ->
           JE.string s
         RootCmd ->
+          JE.string node.label
+        VerGroup ->
+          JE.string node.label
+        HorGroup ->
           JE.string node.label
     
     kids_l = kids node
@@ -117,8 +119,18 @@ jsonValue node =
       ( "id", JE.string node.id )
     , ( "value", val )
     --, ( "active", JE.bool node.isActive )
-    --, ( "kids", JE.list ( List.map jsonValue ( kids node ) ) )
     ] ++ extra )
+
+get : Id -> List Node -> Node
+get id nodes =
+  let
+    optNode = List.head ( List.filter (\ n -> id == n.id) nodes )
+  in
+    case optNode of
+      Nothing ->
+        initBool id "NOT FOUND" False
+      Just node ->
+        node
 
 
 
@@ -165,20 +177,45 @@ mapUpdate f node =
 viewTR : Node -> Html Msg
 viewTR node =
   case node.value of
-    BoolValue flag ->
+    BoolValue _ ->
       node2TR node
 
-    StringValue str ->
+    StringValue _ ->
       node2TR node
 
     RootCmd ->
-        tr []
+        tr [] [ td []
           [ h2 []
             [ a [ href "http://localhost:33333" ] [ text node.label ]
             ]
           , table []
             ( List.map viewTR ( kids node ) )
-          ]
+          ] ]
+
+    VerGroup ->
+      {---------------------------------------------
+      let
+        x = List.map viewList ( kids node )
+      in
+        tr [] [ td [] [
+          table [ title (node.label ++ " " ++ node.id) ]
+            ( List.map viewTR ( kids node ) )
+        ] ]
+      ---------------------------------------------}
+
+        tr [] [ td [] [
+          table [ title (node.label ++ " " ++ node.id) ]
+            ( List.map viewTR ( kids node ) )
+        ] ]
+
+    HorGroup ->
+      let
+        kidsAsTR_l = List.map viewTR ( kids node )
+        --kidsAsTables_l = List.map (\ kidTR_l -> table [] kidTR_l) kidsAsTrLists_l
+        --kidsAsTDs_l = List.map (\ kidAsTable -> td [] [ kidAsTable ]) kidsAsTables_l
+        kidsAsTDs_l = List.map (\ kidAsTR -> td [] [ table [] [ kidAsTR ] ]) kidsAsTR_l
+      in
+        tr [ title (node.label ++ " " ++ node.id) ] kidsAsTDs_l
   
 
 node2TR : Node -> Html Msg
@@ -186,7 +223,7 @@ node2TR node =
   let
     tds_l = List.map (\x -> td [] [x]) (viewList node)
   in
-    tr [] tds_l
+    tr [ title (node.label ++ " " ++ node.id) ] tds_l
 
 
 {-----------------------------------------------}
@@ -201,6 +238,10 @@ viewList node =
           input [ type' "text", value str, onInput (editString node.id) ] []
         RootCmd ->
           notImplemented node "viewList RootCmd"
+        VerGroup ->
+          notImplemented node "viewList VerGroup"
+        HorGroup ->
+          notImplemented node "viewList HorGroup"
   in
     [ label [] [ text node.label ]
     , inputElement
