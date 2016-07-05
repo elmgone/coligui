@@ -12,8 +12,13 @@
 -- See the License for the specific language governing permissions and
 -- limitations under the License.
 
-module Widget exposing (..)
--- Node
+module Widget exposing (
+    Node, Msg
+  , initRoot, initBool, initString
+  , update, mapUpdate
+  , viewTR
+  )
+
 
 import Html exposing (..)
 import Html.Events exposing (..)
@@ -50,8 +55,6 @@ initRoot label kidsList =
   in
     ( rootNode, rootNode :: grandKids )
     
-
--- List.foldl : (a -> b -> b) -> b -> List a -> b
 
 flatKidsList : Node -> List Node
 flatKidsList node =
@@ -102,44 +105,23 @@ type Msg =
 
 update : Msg -> Node -> ( Node, Cmd Msg )
 update msg node =
-  let
-    (nKids, cmds) = List.unzip ( List.map (update msg) ( kids node ) )
-  in
+  --let
+    --(nKids, cmds) = List.unzip ( List.map (update msg) ( kids node ) )
+  --in
     case msg of
       Modify id val ->
         if id == node.id then
           ( { node
               | value = Debug.log ( "update " ++ node.label ) val
-              , kids = KidsList nKids
-            }, Cmd.batch cmds )
+              --, kids = KidsList nKids
+            -- }, Cmd.batch cmds )
+            }, Cmd.none )
         else
+          --( node, Cmd.batch cmds )
           ( node, Cmd.none )
 
 
-{------------------------------------------------------------- }
-updateNode : Id -> Msg -> Node -> ( Node, Cmd Msg )
-updateNode id msg node =
-  let
-    --nodeId = Debug.log ( "update of " ++ id ++ " in " ++ node.id ++ " / " ++ node.label ) node.id
-    _ = Debug.log ( "update of " ++ id ++ " in " ++ node.id ++ " / " ++ node.label ) msg
-    (nKids, cmds) = List.unzip ( List.map (updateNode id msg) ( kids node ) )
-    cmd = Cmd.batch cmds
-
-    newNode =
-      if id == node.id then
-        case msg of
-          Modify val ->
-            { node | value = Debug.log ( "Modify " ++ id ++ " / " ++ node.label ) val }
-
-      else
-        node
-  in
-        ( { newNode | kids = KidsList nKids }
-        , cmd
-        )
-
----------------------------------------------------------------}
-
+{-----------------------------------------------------------}
 mapUpdate : (Node -> (Node, Cmd a)) -> Node -> (Node, Cmd a)
 mapUpdate f node =
   let
@@ -148,24 +130,9 @@ mapUpdate f node =
   in
     ( { newNode | kids = KidsList newKids }
     , Cmd.batch ( cmd :: cmds ) )
+-----------------------------------------------------------}
 
 
-{----------------------------------------
---mapView : Node -> Html Msg
-mapView wMsg2Msg node =
-  let
-    viewNode node =
-      let
-        v = viewTR node
-        -- _ = Debug.log ( "viewTR of " ++ node.id ++ " / " ++ node.label ) v
-      in
-        v
-    
-    kidsResult = List.map viewNode ( kids node )
-    htmlResult = table [] kidsResult
-  in
-    Html.App.map wMsg2Msg htmlResult
-----------------------------------------}
 
 
 -- VIEW
