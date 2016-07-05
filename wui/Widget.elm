@@ -150,6 +150,7 @@ mapUpdate f node =
     , Cmd.batch ( cmd :: cmds ) )
 
 
+{----------------------------------------
 --mapView : Node -> Html Msg
 mapView wMsg2Msg node =
   let
@@ -164,6 +165,7 @@ mapView wMsg2Msg node =
     htmlResult = table [] kidsResult
   in
     Html.App.map wMsg2Msg htmlResult
+----------------------------------------}
 
 
 -- VIEW

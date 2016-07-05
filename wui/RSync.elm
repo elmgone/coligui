@@ -151,9 +151,12 @@ view model =
     --flg id = viewOptFlagTr   (Param.get model.flags id)
     --str id = viewOptStringTr (Param.get model.strings id)
 
-    rootView = W.mapView  CallWidget  model.root
+    --rootView = W.mapView  CallWidget  model.root
+    rootViewTR = W.viewTR    model.root
   in
-    rootView
+    --rootView
+    --table [] [ rootViewTR ]
+    Html.App.map CallWidget (table [] [ rootViewTR ])
 
 
 
