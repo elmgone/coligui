@@ -57,7 +57,9 @@ init =
     tgtF    = W.initString "tgtF" "Target Folder"
     horG1   = W.initHor "horG1" [ recursive, tgtF ]
     
-    ( root, nodes ) = W.initRoot "RSync" [verG1, horG1]
+    switch1   = W.initSwitch "switch1" [verG1, horG1]
+    
+    ( root, nodes ) = W.initRoot "RSync" [switch1]
   in
     ( Model "" "" root
     , Cmd.none )
@@ -104,7 +106,7 @@ update msg model =
 view : Model -> Html Msg
 view model =
   table [] [
-    Html.App.map CallWidget (W.viewTR model.root)
+    Html.App.map CallWidget (W.viewTR ".." model.root)
   , tr [] [ td [] [
       button [ onClick Run ] [ text "Run" ]
     , h3 [] [ text "Output" ]

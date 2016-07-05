@@ -14,7 +14,7 @@
 
 module Widget exposing (
     Node, Msg
-  , initRoot, initVer, initHor
+  , initRoot, initVer, initHor, initSwitch
   , initBool, initString
   , update, mapUpdate
   , viewTR
@@ -37,6 +37,7 @@ type Value
   | RootCmd
   | VerGroup
   | HorGroup
+  | Switch Id
   --| Tabs Id
 
 type alias Id = String
@@ -60,19 +61,17 @@ initRoot label kidsList =
   in
     ( rootNode, rootNode :: grandKids )
 
-initVer : String -> List Node -> Node  -- ( Node, List Node )
+initVer : String -> List Node -> Node
 initVer id kidsList =
   Node id "Vertical Group" VerGroup (KidsList kidsList)
-  {--------------
-  let
-    verNode = Node id "Vertical Group" VerGroup (KidsList kidsList)
-  in
-    verNode
-  --------------}
 
 initHor : String -> List Node -> Node
 initHor id kidsList =
   Node id "Horizontal Group" HorGroup (KidsList kidsList)
+
+initSwitch : String -> List Node -> Node
+initSwitch id kidsList =
+  Node id "Switch Group" (Switch "") (KidsList kidsList)
 
 initBool : Id -> String -> Bool -> Node
 initBool id label flag =
@@ -107,6 +106,8 @@ jsonValue node =
           JE.string node.label
         HorGroup ->
           JE.string node.label
+        Switch sid ->
+          JE.string sid
     
     kids_l = kids node
     extra =
@@ -174,14 +175,14 @@ mapUpdate f node =
 
 -- VIEW
 
-viewTR : Node -> Html Msg
-viewTR node =
+viewTR : Id -> Node -> Html Msg
+viewTR parentId node =
   case node.value of
     BoolValue _ ->
-      node2TR node
+      node2TR parentId node
 
     StringValue _ ->
-      node2TR node
+      node2TR parentId node
 
     RootCmd ->
         tr [] [ td []
@@ -189,7 +190,7 @@ viewTR node =
             [ a [ href "http://localhost:33333" ] [ text node.label ]
             ]
           , table []
-            ( List.map viewTR ( kids node ) )
+            ( List.map (viewTR node.id) ( kids node ) )
           ] ]
 
     VerGroup ->
@@ -205,30 +206,60 @@ viewTR node =
 
         tr [] [ td [] [
           table [ title (node.label ++ " " ++ node.id) ]
-            ( List.map viewTR ( kids node ) )
+            ( List.map (viewTR node.id) ( kids node ) )
         ] ]
 
     HorGroup ->
       let
-        kidsAsTR_l = List.map viewTR ( kids node )
+        kidsAsTR_l = List.map (viewTR node.id) ( kids node )
         --kidsAsTables_l = List.map (\ kidTR_l -> table [] kidTR_l) kidsAsTrLists_l
         --kidsAsTDs_l = List.map (\ kidAsTable -> td [] [ kidAsTable ]) kidsAsTables_l
         kidsAsTDs_l = List.map (\ kidAsTR -> td [] [ table [] [ kidAsTR ] ]) kidsAsTR_l
       in
         tr [ title (node.label ++ " " ++ node.id) ] kidsAsTDs_l
   
+    Switch sid ->
+      {-------------------------------------------}
+      let
+        kids_l = kids node
+        kidsIdsAndLabels_l = List.map (\ k -> (k.id, k.label) ) kids_l
+        mkRadioTR (id, lbl) =
+          tr [] [
+            td [] [ label [] [ text lbl ] ]
+          , td [] [ input [ type' "radio", value id, name node.id
+                    , onClick (selectSwitch node.id id)
+                    ] [] ]
+          ]
+        kidsAsRadios_l = List.map mkRadioTR kidsIdsAndLabels_l
+        -- kidsAsTRs_l = List.map (\ r -> tr [] [ td [] [ r ] ] ) kidsAsRadios_l
+        
+        optSelectedKid = List.head ( List.filter (\ kid -> kid.id == sid ) kids_l )
+        selectedKidTR =
+          case optSelectedKid of
+            Nothing ->
+              tr [ title "select one switch option" ] []
+            Just kid ->
+              -- node2TR node.id kid
+              viewTR  node.id kid
+      in
+        tr [ title (node.label ++ " " ++ node.id) ] [
+          td [] [ table [] kidsAsRadios_l ]
+        , td [] [ table [] [ selectedKidTR ] ]
+        ]
+      -------------------------------------------}
+  
 
-node2TR : Node -> Html Msg
-node2TR node =
+node2TR : Id -> Node -> Html Msg
+node2TR parentId node =
   let
-    tds_l = List.map (\x -> td [] [x]) (viewList node)
+    tds_l = List.map (\x -> td [] [x]) (viewList parentId node)
   in
     tr [ title (node.label ++ " " ++ node.id) ] tds_l
 
 
 {-----------------------------------------------}
-viewList : Node -> List (Html Msg)
-viewList node =
+viewList : Id -> Node -> List (Html Msg)
+viewList parentId node =
   let
     inputElement =
       case node.value of
@@ -239,9 +270,27 @@ viewList node =
         RootCmd ->
           notImplemented node "viewList RootCmd"
         VerGroup ->
-          notImplemented node "viewList VerGroup"
+          --notImplemented node "viewList VerGroup"
+
+--        mkRadioTR (id, lbl) =
+--          tr [] [
+--            td [] [ label [] [ text lbl ] ]
+--          , td [] [ 
+          
+          input [ type' "radio", value parentId, name node.id
+                    , onClick (selectSwitch node.id parentId)
+                    ] []
+                    
+--                     ]
+--          ]
+
         HorGroup ->
           notImplemented node "viewList HorGroup"
+        Switch sid ->
+          input [ type' "radio", checked False
+          --, onCheck (editBool node.id)
+          ] []
+          --notImplemented node ("viewList Switch " ++ sid)
   in
     [ label [] [ text node.label ]
     , inputElement
@@ -253,6 +302,9 @@ editBool id b =
 
 editString id s =
   Modify id (StringValue s)
+
+selectSwitch sid kid =
+  Modify sid (Switch kid)
 
 notImplemented : Node -> String -> Html Msg
 notImplemented node errDesr =
