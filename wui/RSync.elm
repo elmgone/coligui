@@ -85,7 +85,8 @@ type Msg =
   | ChangeString Param.Id    (Param.Msg String)
   | Run
 
-  | CallWidget W.Id W.Msg
+  --| CallWidget W.Id W.Msg
+  | CallWidget W.Msg
 
 --    Save
 --  | Edit
@@ -94,6 +95,7 @@ type Msg =
 --  | CreateFail Http.Error
 
 
+{----------------
 -- W.update : W.Msg -> W.Node -> ( W.Node, Cmd W.Msg )
 updateNode : W.Id -> W.Msg -> W.Node -> ( W.Node, Cmd W.Msg )
 updateNode id msg node =
@@ -101,25 +103,22 @@ updateNode id msg node =
     W.update msg node
   else
     ( node, Cmd.none )
+----------------}
 
 update : Msg -> Model -> (Model, Cmd Msg)
 update msg model =
     case msg of
-      -- Modify id msg ->
-      --   { model | counters = List.map (updateHelp id msg) counters }
-      CallWidget wId wMsg ->
+      -- CallWidget wId wMsg ->
+      CallWidget wMsg ->
         let
-          updateNode : W.Node -> W.Node
-          updateNode node =
-            if wId == node.id then
-              fst ( W.updateNode wId wMsg node )
-            else
-              node
-              
-          newRoot = W.mapUpdate updateNode model.root
+          --newRoot = W.mapUpdate updateNode model.root
+          --updateNode = W.updateNode wId wMsg
+          updateNode = W.update wMsg
+          ( newRoot, cmd ) = W.mapUpdate updateNode model.root
         in
           ( { model | root = newRoot
-            }, Cmd.none
+            -- }, Cmd.map (CallWidget wId) cmd  -- Cmd.none
+            }, Cmd.map CallWidget cmd  -- Cmd.none
           )
 
 {--
@@ -209,36 +208,8 @@ view model =
     flg id = viewOptFlagTr   (Param.get model.flags id)
     str id = viewOptStringTr (Param.get model.strings id)
 
-    --sfP = Debug.log "src folder" (Param.get model.strings "srcF")
-    
-    --werboseVL = List.map ( Html.App.map ( CallWidget model.werbose.id ) ) ( W.viewList model.werbose )
-    --rootVL = List.map ( Html.App.map ( CallWidget model.root.id ) ) ( W.viewList model.root )
-
-{------------------
-        let
-          updateNode : W.Node -> W.Node
-          updateNode node =
-            if wId == node.id then
-              fst ( W.updateNode wId wMsg node )
-            else
-              node
-              
-          newRoot = W.map updateNode model.root
-        in
-          ( { model | root = newRoot
-            }, Cmd.none
-          )
-------------------
-    viewNode : W.Node -> W.Node
-    viewNode node =
-      if wId == node.id then
-        fst ( W.view wId wMsg node )
-      else
-        node
-------------------}
-
-    
-    rootView = W.mapView ( CallWidget model.root.id ) model.root
+    -- rootView = W.mapView ( CallWidget model.root.id ) model.root
+    rootView = W.mapView  CallWidget  model.root
   in
     rootView
     --Html.App.map ( CallWidget model.root.id ) ( W.view model.root )

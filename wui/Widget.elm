@@ -97,7 +97,7 @@ jsonValue node =
 -- UPDATE
 
 type Msg =
-    Modify Value
+    Modify Id Value
   --| Activate Bool
 
 {--
@@ -119,17 +119,22 @@ update msg node =
     (nKids, cmds) = List.unzip ( List.map (update msg) ( kids node ) )
   in
     case msg of
-      Modify val ->
-        ( { node
-            | value = Debug.log ( "update " ++ node.label ) val
-            , kids = KidsList nKids
-          }, Cmd.batch cmds )
+      Modify id val ->
+        if id == node.id then
+          ( { node
+              | value = Debug.log ( "update " ++ node.label ) val
+              , kids = KidsList nKids
+            }, Cmd.batch cmds )
+        else
+          ( node, Cmd.none )
 
 
-{--}
+{-- }
 updateNode : Id -> Msg -> Node -> ( Node, Cmd Msg )
 updateNode id msg node =
   let
+    --nodeId = Debug.log ( "update of " ++ id ++ " in " ++ node.id ++ " / " ++ node.label ) node.id
+    _ = Debug.log ( "update of " ++ id ++ " in " ++ node.id ++ " / " ++ node.label ) msg
     (nKids, cmds) = List.unzip ( List.map (updateNode id msg) ( kids node ) )
     cmd = Cmd.batch cmds
 
@@ -137,7 +142,7 @@ updateNode id msg node =
       if id == node.id then
         case msg of
           Modify val ->
-            { node | value = Debug.log ( "update " ++ node.label ) val }
+            { node | value = Debug.log ( "Modify " ++ id ++ " / " ++ node.label ) val }
 
       else
         node
@@ -148,13 +153,26 @@ updateNode id msg node =
 
 --}
 
-mapUpdate : (Node -> Node) -> Node -> Node
+mapUpdate : (Node -> (Node, Cmd a)) -> Node -> (Node, Cmd a)
 mapUpdate f node =
   let
-    newNode = f node
-    newKids = List.map (mapUpdate f) (kids node)
+    ( newNode, cmd )  = f node
+    ( newKids, cmds ) = List.unzip ( List.map (mapUpdate f) (kids node) )
+  in
+    ( { newNode | kids = KidsList newKids }
+    , Cmd.batch ( cmd :: cmds ) )
+
+{----
+-- mapUpdate : (Node -> (Node, Cmd a)) -> Node -> (Node, Cmd a)
+--map : (Node -> List transKid -> result) -> Node -> result
+map : (Node -> List a -> (Node, b, a)) -> Node -> (Node, b, a)
+map f node =
+  let
+    kidsResult = List.map (map f) (kids node)
+    newNode = f node kidsResult
   in
     { newNode | kids = KidsList newKids }
+----}
 
 
 --mapView : (Node -> List transKid -> result) -> Node -> Html Msg
@@ -163,9 +181,12 @@ mapUpdate f node =
 --mapView : Node -> Html Msg
 mapView wMsg2Msg node =
   let
-    viewNode =
-      --if List.length node.kids
-      viewTR
+    viewNode node =
+      let
+        v = viewTR node
+        -- _ = Debug.log ( "viewTR of " ++ node.id ++ " / " ++ node.label ) v
+      in
+        v
     
     kidsResult = List.map viewNode ( kids node )
     htmlResult = table [] kidsResult
@@ -175,16 +196,6 @@ mapView wMsg2Msg node =
     --case htmlResult of
       --Html msg ->
         --wMsg2Msg msg
-
-{--
-map : (Node -> List transKid -> result) -> Node -> result
-map f node =
-  let
-    kidsResult = List.map (map f) (kids node)
-    newNode = f node kidsResult
-  in
-    { newNode | kids = KidsList newKids }
---}
 
 
 -- VIEW
@@ -210,7 +221,45 @@ viewTR node =
           ]
   
 
+node2TR : Node -> Html Msg
+node2TR node =
+  let
+    tds_l = List.map (\x -> td [] [x]) (viewList node)
+  in
+    tr [] tds_l
+
+
 {--}
+viewList : Node -> List (Html Msg)
+viewList node =
+  let
+    inputElement =
+      case node.value of
+        BoolValue flag ->
+          input [ type' "checkbox", checked flag, onCheck (editBool node.id) ] []
+        StringValue str ->
+          input [ type' "text", value str, onInput (editString node.id) ] []
+        RootCmd ->
+          notImplemented node "viewList RootCmd"
+  in
+    [ label [] [ text node.label ]
+    , inputElement
+    ]
+--}
+
+editBool id b =
+  Modify id (BoolValue b)
+
+editString id s =
+  Modify id (StringValue s)
+
+notImplemented : Node -> String -> Html Msg
+notImplemented node errDesr =
+  div [ {-color "red"-} ] [ text ( "ERROR: " ++ errDesr ++ " NOT IMPLEMENTED: " ++ node.label ++ ": " ++ ( toString node.value ) ) ]
+
+
+
+{-- }
 view : Node -> Html Msg
 view node =
   case node.value of
@@ -233,38 +282,3 @@ view node =
           ]
 --}
 
-node2TR : Node -> Html Msg
-node2TR node =
-  let
-    tds_l = List.map (\x -> td [] [x]) (viewList node)
-  in
-    tr [] tds_l
-
-
-{--}
-viewList : Node -> List (Html Msg)
-viewList node =
-  let
-    inputElement =
-      case node.value of
-        BoolValue flag ->
-          input [ type' "checkbox", checked flag, onCheck editBool ] []
-        StringValue str ->
-          input [ type' "text", value str, onInput editString ] []
-        RootCmd ->
-          notImplemented node "viewList RootCmd"
-  in
-    [ label [] [ text node.label ]
-    , inputElement
-    ]
---}
-
-editBool b =
-  Modify (BoolValue b)
-
-editString s =
-  Modify (StringValue s)
-
-notImplemented : Node -> String -> Html Msg
-notImplemented node errDesr =
-  div [ {-color "red"-} ] [ text ( "ERROR: " ++ errDesr ++ " NOT IMPLEMENTED: " ++ node.label ++ ": " ++ ( toString node.value ) ) ]
