@@ -17,6 +17,7 @@ module Widget exposing (
   , initRoot, initBool, initString
   , update, mapUpdate
   , viewTR
+  , jsonValue
   )
 
 
@@ -89,11 +90,35 @@ kids node =
 
 jsonValue : Node -> JE.Value
 jsonValue node =
-  JE.object [
-    ( "id", JE.string node.id )
-  --, ( "active", JE.bool node.isActive )
-  , ( "kids", JE.list ( List.map jsonValue ( kids node ) ) )
-  ]
+  let
+    {------------------------------------
+    jsonTuples = [
+      ( "id", JE.string node.id )
+    --, ( "active", JE.bool node.isActive )
+    ]
+    ------------------------------------}
+    val =
+      case node.value of
+        BoolValue b ->
+          JE.bool b
+        StringValue s ->
+          JE.string s
+        RootCmd ->
+          JE.string node.label
+    
+    kids_l = kids node
+    extra =
+      if List.length kids_l > 0 then
+        [ ( "kids", JE.list ( List.map jsonValue kids_l ) ) ]
+      else
+        []
+  in
+    JE.object ( [
+      ( "id", JE.string node.id )
+    , ( "value", val )
+    --, ( "active", JE.bool node.isActive )
+    --, ( "kids", JE.list ( List.map jsonValue ( kids node ) ) )
+    ] ++ extra )
 
 
 

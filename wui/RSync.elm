@@ -62,7 +62,7 @@ init =
 
 type Msg =
     CallWidget W.Msg
---  | Run
+    | Run
 
 
 --    Save
@@ -84,15 +84,20 @@ update msg model =
             }, Cmd.map CallWidget cmd
           )
 
-{--------------------------------------
+{--------------------------------------}
       Run ->
         let
+{--------------------------------------
           flags = JE.list ( List.map ( Param.asJsonValue JE.bool ) model.flags )
           strings = JE.list ( List.map ( Param.asJsonValue JE.string ) model.strings )
+          
           data = JE.encode 2 ( JE.object [
               ( "flags", flags )
             , ( "strings", strings )
           ] )
+--------------------------------------}
+          
+          data = JE.encode 2 ( W.jsonValue model.root )
         in
             ( { model
                 | output = data  -- JE.encode 2 ( JE.list ( List.map ( Param.asJsonValue JE.bool ) model.flags ) )
@@ -105,15 +110,28 @@ update msg model =
 
 view : Model -> Html Msg
 view model =
-  Html.App.map CallWidget (table [] [ W.viewTR model.root ])
-  {---------------------
-  let
-    rootViewTR = W.viewTR    model.root
-  in
-    --table [] [ rootViewTR ]
-    --Html.App.map CallWidget (table [] [ rootViewTR ])
-    Html.App.map CallWidget (table [] [ W.viewTR model.root ])
-  ---------------------}
+  table [] [
+    Html.App.map CallWidget (W.viewTR model.root)
+  , button [ onClick Run ] [ text "Run" ]
+  , h3 [] [ text "Output" ]
+  , text model.output
+  , h4 [] [ text "debug" ]
+  , text (JE.encode 2 ( W.jsonValue model.root ))
+
+  {----------------------------------------- }
+  , ul [] [
+      li [] [ text (JE.encode 2 ( W.jsonValue model.root )) ]
+    ]
+  -----------------------------------------}
+  
+  ]
+
+{----------------------------------------- }
+  Html.App.map CallWidget (table [] [
+    W.viewTR model.root
+  , button [ onClick Run ] [ text "Run" ]
+  ])
+-----------------------------------------}
 
 
 {----------------------------------------- }
