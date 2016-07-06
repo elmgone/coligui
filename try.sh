@@ -12,11 +12,19 @@
 
 # ( cd wui && eg.sh elm make RSync.elm && firefox index.html )
 
+if echo $* | grep 'build' > /dev/null ; then
+	BLD=./build.sh
+else
+	BLD="echo ok."
+fi
+
 cd wui &&
 	elm make RSync.elm &&
 	firefox index.html &&
 	cd .. &&
-	./build.sh
+	$BLD
+
+##	./build.sh
 
 ##	$EG elm make RSync.elm &&
 

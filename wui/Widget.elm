@@ -73,7 +73,14 @@ aHorizontal id label kidsList =
 
 aSwitch : String -> String -> List Node -> Node
 aSwitch id label kidsList =
-  Node id label (Switch "") (KidsList kidsList) True
+  let
+    optFirstKid = List.head kidsList
+    fkid =
+      case optFirstKid of
+        Nothing  -> ""
+        Just kid -> kid.id
+  in
+    Node id label (Switch fkid) (KidsList kidsList) True
 
 aBool : Id -> String -> Bool -> Node
 aBool id label flag =
@@ -220,6 +227,7 @@ viewTR parentId node =
           tr [] [
             td [] [ label [] [ text lbl ] ]
           , td [] [ input [ type' "radio", value id, name node.id
+                    , checked (id == sid)
                     , onClick (selectSwitch node.id id)
                     ] [] ]
           ]

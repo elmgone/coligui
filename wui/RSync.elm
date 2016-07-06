@@ -75,9 +75,10 @@ init =
 --      W.aString (id ++ "U") (name ++ " User")
     user id =
       W.aString (id ++ "U") "User"
-    nwport id name =
-      --W.aString (destId++"P") (destName ++ " Port")
-      W.aString (id ++ "P") (name ++ " Port")
+--    nwport id name =
+--      W.aString (id ++ "P") (name ++ " Port")
+    nwport id =
+      W.aString (id ++ "P") "Port"
 
     -- localFolder id name =
       -- folder (id ++ "L")  (name ++ " Local")
@@ -86,7 +87,7 @@ init =
         folder (id ++ "L")  -- "Local"
       ]
 
-    remoteShell id name =
+    remoteShell id =  -- name =
       -- W.aVertical (id ++ "RS") (name ++ " Remote Shell") [
       W.aVertical (id ++ "RS") "Remote Shell" [
         user    (id ++ "RS") -- (name ++ " Remote Shell")
@@ -94,10 +95,20 @@ init =
       , folder  (id ++ "RS") -- (name ++ " Remote Shell")
       ]
     
+    remoteDaemon id =  -- name =
+      -- W.aVertical (id ++ "RS") (name ++ " Remote Shell") [
+      W.aVertical (id ++ "RD") "Remote Daemon" [
+        user    (id ++ "RD") -- (name ++ " Remote Shell")
+      , host    (id ++ "RD") -- (name ++ " Remote Shell")
+      , nwport  (id ++ "RD") -- (name ++ " Remote Shell")
+      , folder  (id ++ "RD") -- (name ++ " Remote Shell")
+      ]
+    
     srcLocation =
       W.aSwitch "src" "Source" [
         localFolder "src"   -- "Source"
-      , remoteShell "src" "Source"
+      , remoteShell "src" -- "Source"
+      , remoteDaemon "src"
       ]
 
   {-----------------------------------------------------
