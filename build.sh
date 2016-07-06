@@ -10,7 +10,11 @@ if which eg.sh > /dev/null; then
 fi
 
 if echo $* | grep upx > /dev/null ; then
-	UPX="$EG upx --ultra-brute /go/bin/coligui"
+	# UPX="$EG upx --ultra-brute /go/bin/coligui"
+	UPX="$EG upx -9 /go/bin/coligui"
+	if echo $* | grep brute > /dev/null ; then
+		UPX="$EG upx --ultra-brute /go/bin/coligui"
+	fi
 else
 	UPX="echo running coligui ..."
 fi

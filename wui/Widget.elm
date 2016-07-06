@@ -14,8 +14,8 @@
 
 module Widget exposing (
     Node, Msg
-  , initRoot, initVer, initHor, initSwitch
-  , initBool, initString
+  , aRoot, aVertical, aHorizontal, aSwitch
+  , aBool, aString
   , update, mapUpdate
   , viewTR
   , jsonValue
@@ -46,42 +46,42 @@ type alias Node =
   { id       : Id
   , label    : String
   , value    : Value
-  --, isActive : Bool
   , kids     : Kids
+  , isActive : Bool
   }
 
 type Kids
   = KidsList ( List Node )
 
-initRoot : String -> List Node -> ( Node, List Node )
-initRoot label kidsList =
+aRoot : String -> List Node -> ( Node, List Node )
+aRoot label kidsList =
   let
-    rootNode = Node "root" label RootCmd (KidsList kidsList)
+    rootNode = Node "root" label RootCmd (KidsList kidsList) True
     grandKids = flatKidsList rootNode
   in
     ( rootNode, rootNode :: grandKids )
 
-initVer : String -> String -> List Node -> Node
-initVer id label kidsList =
-  --Node id "Vertical Group" VerGroup (KidsList kidsList)
-  Node id label VerGroup (KidsList kidsList)
+aVertical : String -> String -> List Node -> Node
+aVertical id label kidsList =
+  --Node id "Vertical Group" VerGroup (KidsList kidsList) True
+  Node id label VerGroup (KidsList kidsList) True
 
-initHor : String -> String -> List Node -> Node
-initHor id label kidsList =
-  --Node id "Horizontal Group" HorGroup (KidsList kidsList)
-  Node id label HorGroup (KidsList kidsList)
+aHorizontal : String -> String -> List Node -> Node
+aHorizontal id label kidsList =
+  --Node id "Horizontal Group" HorGroup (KidsList kidsList) True
+  Node id label HorGroup (KidsList kidsList) True
 
-initSwitch : String -> List Node -> Node
-initSwitch id kidsList =
-  Node id "Switch Group" (Switch "") (KidsList kidsList)
+aSwitch : String -> String -> List Node -> Node
+aSwitch id label kidsList =
+  Node id label (Switch "") (KidsList kidsList) True
 
-initBool : Id -> String -> Bool -> Node
-initBool id label flag =
-  Node id label (BoolValue flag) (KidsList [])
+aBool : Id -> String -> Bool -> Node
+aBool id label flag =
+  Node id label (BoolValue flag) (KidsList []) True
 
-initString : Id -> String -> Node
-initString id label =
-  Node id label (StringValue "") (KidsList [])
+aString : Id -> String -> Node
+aString id label =
+  Node id label (StringValue "") (KidsList []) True
 
 kids : Node -> List Node
 kids node =
@@ -121,7 +121,7 @@ jsonValue node =
     JE.object ( [
       ( "id", JE.string node.id )
     , ( "value", val )
-    --, ( "active", JE.bool node.isActive )
+    , ( "active", JE.bool node.isActive )
     ] ++ extra )
 
 get : Id -> List Node -> Node
@@ -131,7 +131,7 @@ get id nodes =
   in
     case optNode of
       Nothing ->
-        initBool id "NOT FOUND" False
+        aBool id "NOT FOUND" False
       Just node ->
         node
 
@@ -145,19 +145,12 @@ type Msg =
 
 update : Msg -> Node -> ( Node, Cmd Msg )
 update msg node =
-  --let
-    --(nKids, cmds) = List.unzip ( List.map (update msg) ( kids node ) )
-  --in
     case msg of
       Modify id val ->
         if id == node.id then
-          ( { node
-              | value = Debug.log ( "update " ++ node.label ) val
-              --, kids = KidsList nKids
-            -- }, Cmd.batch cmds )
-            }, Cmd.none )
+          ( { node | value = Debug.log ( "update " ++ node.label ) val }
+          , Cmd.none )
         else
-          --( node, Cmd.batch cmds )
           ( node, Cmd.none )
 
 
@@ -214,8 +207,6 @@ viewTR parentId node =
     HorGroup ->
       let
         kidsAsTR_l = List.map (viewTR node.id) ( kids node )
-        --kidsAsTables_l = List.map (\ kidTR_l -> table [] kidTR_l) kidsAsTrLists_l
-        --kidsAsTDs_l = List.map (\ kidAsTable -> td [] [ kidAsTable ]) kidsAsTables_l
         kidsAsTDs_l = List.map (\ kidAsTR -> td [] [ table [] [ kidAsTR ] ]) kidsAsTR_l
       in
         tr [ title (node.label ++ " " ++ node.id) ] kidsAsTDs_l
@@ -232,20 +223,24 @@ viewTR parentId node =
                     , onClick (selectSwitch node.id id)
                     ] [] ]
           ]
-        kidsAsRadios_l = List.map mkRadioTR kidsIdsAndLabels_l
-        -- kidsAsTRs_l = List.map (\ r -> tr [] [ td [] [ r ] ] ) kidsAsRadios_l
+        kidsAsRadioTRs_l = List.map mkRadioTR kidsIdsAndLabels_l
+        switchBoard = tr [] [ th [] [
+          text node.label
+        ]] :: kidsAsRadioTRs_l
         
         optSelectedKid = List.head ( List.filter (\ kid -> kid.id == sid ) kids_l )
         selectedKidTR =
           case optSelectedKid of
             Nothing ->
-              tr [ title "select one switch option" ] []
+              tr [ title "please select one switch option" ] [ td [] [
+                text ("(please select one of the options for "
+                  ++ node.label ++ ")")
+              ] ]
             Just kid ->
-              -- node2TR node.id kid
               viewTR  node.id kid
       in
         tr [ title (node.label ++ " " ++ node.id) ] [
-          td [] [ table [] kidsAsRadios_l ]
+          td [] [ table [] switchBoard ]  -- kidsAsRadios_l ]
         , td [] [ table [] [ selectedKidTR ] ]
         ]
       -------------------------------------------}

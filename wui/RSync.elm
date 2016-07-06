@@ -63,49 +63,58 @@ type alias Model =
 init : (Model, Cmd Msg)
 init =
   let
-    folder id name =
-      W.initString (id ++ "F") (name ++ " Folder")
-    host id name =
-      --W.initString (destId++"H") (destName ++ " Host")
-      W.initString (id ++ "H") (name ++ " Host")
-    user id name =
-      --W.initString (destId++"U") (destName ++ " User")
-      W.initString (id ++ "U") (name ++ " User")
+--    folder id name =
+--      W.aString (id ++ "F") (name ++ " Folder")
+    folder id =
+      W.aString (id ++ "F") "Folder"
+--    host id name =
+--      W.aString (id ++ "H") (name ++ " Host")
+    host id =
+      W.aString (id ++ "H") "Host"
+--    user id name =
+--      W.aString (id ++ "U") (name ++ " User")
+    user id =
+      W.aString (id ++ "U") "User"
     nwport id name =
-      --W.initString (destId++"P") (destName ++ " Port")
-      W.initString (id ++ "P") (name ++ " Port")
+      --W.aString (destId++"P") (destName ++ " Port")
+      W.aString (id ++ "P") (name ++ " Port")
 
-    localFolder id name =
-      folder (id ++ "L") (name ++ " Local")
+    -- localFolder id name =
+      -- folder (id ++ "L")  (name ++ " Local")
+    localFolder id =
+      W.aVertical (id ++ "L") "Local" [  -- (name ++ " Remote Shell") [
+        folder (id ++ "L")  -- "Local"
+      ]
 
     remoteShell id name =
-      W.initVer (id ++ "RS") (name ++ " Remote Shell") [
-        user    (id ++ "RS") (name ++ " Remote Shell")
-      , host    (id ++ "RS") (name ++ " Remote Shell")
-      , folder  (id ++ "RS") (name ++ " Remote Shell")
+      -- W.aVertical (id ++ "RS") (name ++ " Remote Shell") [
+      W.aVertical (id ++ "RS") "Remote Shell" [
+        user    (id ++ "RS") -- (name ++ " Remote Shell")
+      , host    (id ++ "RS") -- (name ++ " Remote Shell")
+      , folder  (id ++ "RS") -- (name ++ " Remote Shell")
       ]
     
     srcLocation =
-      W.initSwitch "src" [
-        localFolder "src" "Source"
+      W.aSwitch "src" "Source" [
+        localFolder "src"   -- "Source"
       , remoteShell "src" "Source"
       ]
 
   {-----------------------------------------------------
-    werbose = W.initBool "w" "Werbose" False
-    srcF    = W.initString "srcF" "Source Folder"
-    verG1   = W.initVer "verG1" [ werbose, srcF ]
+    werbose = W.aBool "w" "Werbose" False
+    srcF    = W.aString "srcF" "Source Folder"
+    verG1   = W.aVertical "verG1" [ werbose, srcF ]
     
-    recursive = W.initBool "r" "Recursive" False
-    tgtF    = W.initString "tgtF" "Target Folder"
-    horG1   = W.initHor "horG1" [ recursive, tgtF ]
+    recursive = W.aBool "r" "Recursive" False
+    tgtF    = W.aString "tgtF" "Target Folder"
+    horG1   = W.aHorizontal "horG1" [ recursive, tgtF ]
     
-    switch1   = W.initSwitch "switch1" [verG1, horG1]
+    switch1   = W.aSwitch "switch1" [verG1, horG1]
 
-    ( root, nodes ) = W.initRoot "RSync" [switch1]
+    ( root, nodes ) = W.aRoot "RSync" [switch1]
   -----------------------------------------------------}
     
-    ( root, nodes ) = W.initRoot "RSync" [srcLocation]
+    ( root, nodes ) = W.aRoot "RSync" [srcLocation]
   in
     ( Model "" "" root
     , Cmd.none )
