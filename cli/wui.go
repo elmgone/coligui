@@ -28,11 +28,9 @@ var (
 		Use:   "wui",
 		Short: "serve the Web UI",
 		Long:  `Run a web server which presents the Web UI for CoLiGui`,
-		Run: func(cmd *cobra.Command, args []string) {
-			srv.ServeGin(33333)
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return srv.ServeGin(33333)
 			//			srv.ServeWui()
-			//		// TODO: Work your own magic here
-			//		fmt.Println("wui called")
 		},
 	}
 )

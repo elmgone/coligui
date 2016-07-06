@@ -64,13 +64,13 @@ type alias Model =
 init : (Model, Cmd Msg)
 init =
   let
-    folder id = W.aString (id ++ "-F") "Folder"
-    host   id = W.aString (id ++ "-H") "Host"
-    user   id = W.aString (id ++ "-U") "User"
-    nwport id = W.aString (id ++ "-P") "Port"
+    folder id = W.aString (id ++ "-F") "Folder" "%s"
+    host   id = W.aString (id ++ "-H") "Host"   "%s"
+    user   id = W.aString (id ++ "-U") "User"   "%s@"
+    nwport id = W.aString (id ++ "-P") "Port"   ":%s"
 
     localFolder id =
-      aVertical (id ++ "-L") "Local" [
+      aVertical (id ++ "-L") "Local" "" [
         folder (id ++ "-L")
       ]
 
@@ -78,8 +78,7 @@ init =
       let
         sid = id ++ "-RS"
       in
-        --aVertical (sid ++ "-VG") "Remote Shell" [
-        aVertical sid "Remote Shell" [
+        aVertical sid "Remote Shell" "" [
           user    sid
         , host    sid
         , folder  sid
@@ -89,8 +88,7 @@ init =
       let
         did = id ++ "-RD"
       in
-        --aVertical (did ++ "-VG") "Remote Daemon" [
-        aVertical did "Remote Daemon" [
+        aVertical did "Remote Daemon" "" [
           user    did
         , host    did
         , nwport  did
@@ -98,7 +96,6 @@ init =
         ]
     
     location id name =
-      --aSwitch (id ++ "-SW") name [
       aSwitch id name [
         localFolder  id
       , remoteShell  id
@@ -106,27 +103,13 @@ init =
       ]
 
     srcLocation = location "src" "Source"
-    {----------------------------------------
-      aSwitch ("src" ++ "-LSW") "Source" [
-        localFolder  "src"
-      , remoteShell  "src"
-      , remoteDaemon "src"
-      ]
-    ----------------------------------------}
-
     tgtLocation = location "tgt" "Target"
-    {----------------------------------------
-    tgtLocation =
-      aSwitch ("tgt" ++ "-LSW") "Target" [
-        localFolder  "tgt"
-      , remoteShell  "tgt"
-      , remoteDaemon "tgt"
-      ]
-    ----------------------------------------}
 
     locations =
-      aHorizontal "loc" "Location" [ srcLocation, tgtLocation ]
+      aHorizontal "loc" "Location" "" [ srcLocation, tgtLocation ]
 
+    verbose = aBool "verbose" "Verbose" "--verbose" False
+    
   {-----------------------------------------------------
     werbose = aBool "w" "Werbose" False
     srcF    = aString "srcF" "Source Folder"
@@ -141,7 +124,7 @@ init =
     ( root, nodes ) = aRoot "RSync" [switch1]
   -----------------------------------------------------}
     
-    ( root, nodes ) = aRoot "RSync" [ locations ]  -- srcLocation, tgtLocation ]
+    ( root, nodes ) = aRoot "RSync" "rsync %s" [ verbose, locations ]
   in
     ( Model "" "" root
     , Cmd.none )
@@ -167,8 +150,9 @@ update msg model =
     case msg of
       CallWidget wMsg ->
         let
-          updateNode = W.update wMsg
-          ( newRoot, cmd ) = W.mapUpdate updateNode model.root
+          --updateNode = W.update wMsg
+          --( newRoot, cmd ) = W.mapUpdate updateNode model.root
+          ( newRoot, cmd ) = W.update wMsg model.root
         in
           ( { model | root = newRoot }
           , Cmd.map CallWidget cmd
@@ -177,7 +161,8 @@ update msg model =
 {--------------------------------------}
       Save ->
         let
-          data = JE.encode 2 ( W.jsonValue model.root )
+          --data = JE.encode 2 ( W.jsonValue model.root )
+          data = W.toJson 2 model.root
         in
             ( { model | output = data }
             , saveJob model.root
@@ -202,8 +187,6 @@ type alias SaveResult =
   }
 
 decodeSaved : JD.Decoder SaveResult
---decodeSaved =
---  JD.tuple2 SaveResult JD.string JD.string
 decodeSaved =
   JD.object2 SaveResult
     ("id"  := JD.string)
@@ -213,7 +196,8 @@ saveJob : W.Node -> Cmd Msg
 saveJob node =
   let
     url = "/job/RSync"
-    body_s = JE.encode 2 (W.jsonValue node)
+    --body_s = JE.encode 2 (W.jsonValue node)
+    body_s = W.toJson 2 node
     postCall = Http.post decodeSaved url (Http.string body_s)
   in
     Task.perform SaveFail SaveSucceed postCall
@@ -231,7 +215,8 @@ view model =
     , h3 [] [ text "Output" ]
     , text model.output
     , h4 [] [ text "debug" ]
-    , text (JE.encode 2 ( W.jsonValue model.root ))
+    --, text (JE.encode 2 ( W.jsonValue model.root ))
+    , text ( W.toJson 2 model.root )
     ] ]
 
   {----------------------------------------- }

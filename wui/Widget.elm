@@ -16,9 +16,9 @@ module Widget exposing (
     Node, Msg
   , aRoot, aVertical, aHorizontal, aSwitch
   , aBool, aString
-  , update, mapUpdate
+  , update  -- , mapUpdate
   , viewTR
-  , jsonValue
+  , toJson  --, jsonValue
   )
 
 
@@ -46,28 +46,29 @@ type alias Node =
   { id       : Id
   , label    : String
   , value    : Value
+  , cmdFmt   : String
   , kids     : Kids
-  , isActive : Bool
+  --, isActive : Bool
   }
 
 type Kids
   = KidsList ( List Node )
 
-aRoot : String -> List Node -> ( Node, List Node )
-aRoot label kidsList =
+aRoot : String -> String -> List Node -> ( Node, List Node )
+aRoot label cmdFmt kidsList =
   let
-    rootNode = Node "root" label RootCmd (KidsList kidsList) True
+    rootNode = Node "root" label RootCmd cmdFmt (KidsList kidsList)
     grandKids = flatKidsList rootNode
   in
     ( rootNode, rootNode :: grandKids )
 
-aVertical : String -> String -> List Node -> Node
-aVertical id label kidsList =
-  Node (id ++ "-VG") label VerGroup (KidsList kidsList) True
+aVertical : String -> String -> String -> List Node -> Node
+aVertical id label cmdFmt kidsList =
+  Node (id ++ "-VG") label VerGroup cmdFmt (KidsList kidsList)  -- True
 
-aHorizontal : String -> String -> List Node -> Node
-aHorizontal id label kidsList =
-  Node (id ++ "-HG") label HorGroup (KidsList kidsList) True
+aHorizontal : String -> String -> String -> List Node -> Node
+aHorizontal id label cmdFmt kidsList =
+  Node (id ++ "-HG") label HorGroup cmdFmt (KidsList kidsList)  -- True
 
 aSwitch : String -> String -> List Node -> Node
 aSwitch id label kidsList =
@@ -78,15 +79,15 @@ aSwitch id label kidsList =
         Nothing  -> ""
         Just kid -> kid.id
   in
-    Node (id ++ "-SW") label (Switch fkid) (KidsList kidsList) True
+    Node (id ++ "-SW") label (Switch fkid) "" (KidsList kidsList)  -- True
 
-aBool : Id -> String -> Bool -> Node
-aBool id label flag =
-  Node (id ++ "_B") label (BoolValue flag) (KidsList []) True
+aBool : Id -> String -> String -> Bool -> Node
+aBool id label cmdFmt flag =
+  Node (id ++ "_B") label (BoolValue flag) cmdFmt (KidsList [])  -- True
 
-aString : Id -> String -> Node
-aString id label =
-  Node (id ++ "_S") label (StringValue "") (KidsList []) True
+aString : Id -> String -> String -> Node
+aString id label cmdFmt =
+  Node (id ++ "_S") label (StringValue "") cmdFmt (KidsList [])  -- True
 
 kids : Node -> List Node
 kids node =
@@ -98,23 +99,27 @@ flatKidsList : Node -> List Node
 flatKidsList node =
   List.foldl List.append [] (List.map flatKidsList (kids node))
 
+toJson : Int -> Node -> String
+toJson indent node =
+  JE.encode indent (jsonValue node)
+
 jsonValue : Node -> JE.Value
 jsonValue node =
   let
-    val =
+    (val, typ) =
       case node.value of
         BoolValue b ->
-          JE.bool b
+          (JE.bool b, "Bool")
         StringValue s ->
-          JE.string s
+          (JE.string s, "String")
         RootCmd ->
-          JE.string node.label
+          (JE.string node.label, "Root")
         VerGroup ->
-          JE.string node.label
+          (JE.string node.label, "VerticalGroup")
         HorGroup ->
-          JE.string node.label
+          (JE.string node.label, "HorizontalGroup")
         Switch sid ->
-          JE.string sid
+          (JE.string sid, "Switch")
     
     kids_l = kids node
     extra =
@@ -125,8 +130,11 @@ jsonValue node =
   in
     JE.object ( [
       ( "id", JE.string node.id )
+    , ( "label", JE.string node.label )
+    , ( "type", JE.string typ )
     , ( "value", val )
-    , ( "active", JE.bool node.isActive )
+    , ( "cmdFmt", JE.string node.cmdFmt )
+    -- , ( "active", JE.bool node.isActive )
     ] ++ extra )
 
 
@@ -137,7 +145,7 @@ get id nodes =
   in
     case optNode of
       Nothing ->
-        aBool id "NOT FOUND" False
+        aBool id "!!NOT FOUND!!" "!!NOT FOUND!!" False
       Just node ->
         node
 
@@ -151,10 +159,38 @@ type Msg =
 
 update : Msg -> Node -> ( Node, Cmd Msg )
 update msg node =
-    case msg of
-      Modify id val ->
+  mapUpdate (updateSingleNode msg) node
+
+updateSingleNode : Msg -> Node -> ( Node, Cmd Msg )
+updateSingleNode msg node =
+  case msg of
+    Modify id val ->
+      let
+        value = val
+{------------------------------------
+          case val of
+            Switch sid ->
+              val...
+            _ ->
+              val
+{  ------------------------------------
+            BoolValue b ->
+              JE.bool b
+            StringValue s ->
+              JE.string s
+            RootCmd ->
+              JE.string node.label
+            VerGroup ->
+              JE.string node.label
+            HorGroup ->
+              JE.string node.label
+            Switch sid ->
+              JE.string sid
+------------------------------------}
+          
+      in
         if id == node.id then
-          ( { node | value = Debug.log ( "update " ++ node.label ) val }
+          ( { node | value = Debug.log ( "update " ++ node.label ) value }
           , Cmd.none )
         else
           ( node, Cmd.none )
@@ -171,6 +207,17 @@ mapUpdate f node =
     , Cmd.batch ( cmd :: cmds ) )
 -----------------------------------------------------------}
 
+{-----------------------------------------------------------
+activateTree : Bool -> Node -> Node
+activateTree act node =
+  let
+    nKids = List.map (activateTree act) (kids node)
+  in
+    { node
+      | isActive = act
+      , kids = KidsList nKids
+    }
+-----------------------------------------------------------}
 
 
 
