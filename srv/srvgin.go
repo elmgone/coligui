@@ -1,6 +1,9 @@
 package srv
 
 import (
+	"crypto/sha1"
+	"encoding/hex"
+	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -30,10 +33,38 @@ func ServeGin(port int) {
 			return
 		}
 		fmt.Printf("POSTed to /job/%s: '''%s'''\n", cmd_s, body_b)
+		//		c.String(http.StatusOK, `"%s"`, body_b)
 
-		c.JSON(200, gin.H{
-			"message": "pong",
-		})
+		//		c.JSON(200, gin.H{
+		//			"id":  "x1",
+		//			"cmd": "bla",
+		//		})
+
+		var node gin.H
+		err = json.Unmarshal(body_b, &node)
+		if err != nil {
+			c.AbortWithError(http.StatusBadRequest, err)
+			return
+		}
+
+		node_b, err := json.Marshal(node)
+		if err != nil {
+			c.AbortWithError(http.StatusBadRequest, err)
+			return
+		}
+
+		h := sha1.New()
+		_ /*n*/, err = h.Write(node_b)
+		if err != nil {
+			c.AbortWithError(http.StatusBadRequest, err)
+			return
+		}
+
+		res := gin.H{
+			"id":  hex.EncodeToString(h.Sum(nil)),
+			"cmd": "bla",
+		}
+		c.JSON(http.StatusCreated, res)
 	})
 
 	router.GET("/ping", func(c *gin.Context) {

@@ -63,13 +63,11 @@ aRoot label kidsList =
 
 aVertical : String -> String -> List Node -> Node
 aVertical id label kidsList =
-  --Node id "Vertical Group" VerGroup (KidsList kidsList) True
-  Node id label VerGroup (KidsList kidsList) True
+  Node (id ++ "-VG") label VerGroup (KidsList kidsList) True
 
 aHorizontal : String -> String -> List Node -> Node
 aHorizontal id label kidsList =
-  --Node id "Horizontal Group" HorGroup (KidsList kidsList) True
-  Node id label HorGroup (KidsList kidsList) True
+  Node (id ++ "-HG") label HorGroup (KidsList kidsList) True
 
 aSwitch : String -> String -> List Node -> Node
 aSwitch id label kidsList =
@@ -80,15 +78,15 @@ aSwitch id label kidsList =
         Nothing  -> ""
         Just kid -> kid.id
   in
-    Node id label (Switch fkid) (KidsList kidsList) True
+    Node (id ++ "-SW") label (Switch fkid) (KidsList kidsList) True
 
 aBool : Id -> String -> Bool -> Node
 aBool id label flag =
-  Node id label (BoolValue flag) (KidsList []) True
+  Node (id ++ "_B") label (BoolValue flag) (KidsList []) True
 
 aString : Id -> String -> Node
 aString id label =
-  Node id label (StringValue "") (KidsList []) True
+  Node (id ++ "_S") label (StringValue "") (KidsList []) True
 
 kids : Node -> List Node
 kids node =
@@ -130,6 +128,7 @@ jsonValue node =
     , ( "value", val )
     , ( "active", JE.bool node.isActive )
     ] ++ extra )
+
 
 get : Id -> List Node -> Node
 get id nodes =

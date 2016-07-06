@@ -14,7 +14,9 @@
 
 module RSync exposing (Model, Msg, init, update, view)
 
-import Widget as W
+import Widget as W exposing (
+    aRoot, aVertical, aHorizontal, aSwitch, aBool, aString
+  )
 
 import Html exposing (..)
 import Html.App
@@ -38,7 +40,6 @@ main =
 
 type alias Model =
   { id        : String
-  --, visible   : Bool
   , output    : String
   
   -- widgets
@@ -63,63 +64,84 @@ type alias Model =
 init : (Model, Cmd Msg)
 init =
   let
-    folder id = W.aString (id ++ "F") "Folder"
-    host   id = W.aString (id ++ "H") "Host"
-    user   id = W.aString (id ++ "U") "User"
-    nwport id = W.aString (id ++ "P") "Port"
+    folder id = W.aString (id ++ "-F") "Folder"
+    host   id = W.aString (id ++ "-H") "Host"
+    user   id = W.aString (id ++ "-U") "User"
+    nwport id = W.aString (id ++ "-P") "Port"
 
     localFolder id =
-      W.aVertical (id ++ "L") "Local" [
-        folder (id ++ "L")
+      aVertical (id ++ "-L") "Local" [
+        folder (id ++ "-L")
       ]
 
     remoteShell id =
-      W.aVertical (id ++ "RS") "Remote Shell" [
-        user    (id ++ "RS")
-      , host    (id ++ "RS")
-      , folder  (id ++ "RS")
-      ]
+      let
+        sid = id ++ "-RS"
+      in
+        --aVertical (sid ++ "-VG") "Remote Shell" [
+        aVertical sid "Remote Shell" [
+          user    sid
+        , host    sid
+        , folder  sid
+        ]
     
     remoteDaemon id =
-      W.aVertical (id ++ "RD") "Remote Daemon" [
-        user    (id ++ "RD") -- (name ++ " Remote Shell")
-      , host    (id ++ "RD") -- (name ++ " Remote Shell")
-      , nwport  (id ++ "RD") -- (name ++ " Remote Shell")
-      , folder  (id ++ "RD") -- (name ++ " Remote Shell")
-      ]
+      let
+        did = id ++ "-RD"
+      in
+        --aVertical (did ++ "-VG") "Remote Daemon" [
+        aVertical did "Remote Daemon" [
+          user    did
+        , host    did
+        , nwport  did
+        , folder  did
+        ]
     
-    srcLocation =
-      W.aSwitch "src" "Source" [
+    location id name =
+      --aSwitch (id ++ "-SW") name [
+      aSwitch id name [
+        localFolder  id
+      , remoteShell  id
+      , remoteDaemon id
+      ]
+
+    srcLocation = location "src" "Source"
+    {----------------------------------------
+      aSwitch ("src" ++ "-LSW") "Source" [
         localFolder  "src"
       , remoteShell  "src"
       , remoteDaemon "src"
       ]
+    ----------------------------------------}
 
+    tgtLocation = location "tgt" "Target"
+    {----------------------------------------
     tgtLocation =
-      W.aSwitch "tgt" "Target" [
+      aSwitch ("tgt" ++ "-LSW") "Target" [
         localFolder  "tgt"
       , remoteShell  "tgt"
       , remoteDaemon "tgt"
       ]
+    ----------------------------------------}
 
-    location =
-      W.aHorizontal "loc" "Location" [ srcLocation, tgtLocation ]
+    locations =
+      aHorizontal "loc" "Location" [ srcLocation, tgtLocation ]
 
   {-----------------------------------------------------
-    werbose = W.aBool "w" "Werbose" False
-    srcF    = W.aString "srcF" "Source Folder"
-    verG1   = W.aVertical "verG1" [ werbose, srcF ]
+    werbose = aBool "w" "Werbose" False
+    srcF    = aString "srcF" "Source Folder"
+    verG1   = aVertical "verG1" [ werbose, srcF ]
     
-    recursive = W.aBool "r" "Recursive" False
-    tgtF    = W.aString "tgtF" "Target Folder"
-    horG1   = W.aHorizontal "horG1" [ recursive, tgtF ]
+    recursive = aBool "r" "Recursive" False
+    tgtF    = aString "tgtF" "Target Folder"
+    horG1   = aHorizontal "horG1" [ recursive, tgtF ]
     
-    switch1   = W.aSwitch "switch1" [verG1, horG1]
+    switch1   = aSwitch "switch1" [verG1, horG1]
 
-    ( root, nodes ) = W.aRoot "RSync" [switch1]
+    ( root, nodes ) = aRoot "RSync" [switch1]
   -----------------------------------------------------}
     
-    ( root, nodes ) = W.aRoot "RSync" [ location ]  -- srcLocation, tgtLocation ]
+    ( root, nodes ) = aRoot "RSync" [ locations ]  -- srcLocation, tgtLocation ]
   in
     ( Model "" "" root
     , Cmd.none )
@@ -129,7 +151,9 @@ init =
 
 type Msg =
     CallWidget W.Msg
-    | Run
+    | Save
+    | SaveSucceed SaveResult
+    | SaveFail Http.Error
 
 
 --    Save
@@ -151,14 +175,49 @@ update msg model =
           )
 
 {--------------------------------------}
-      Run ->
+      Save ->
         let
           data = JE.encode 2 ( W.jsonValue model.root )
         in
             ( { model | output = data }
-            , Cmd.none
+            , saveJob model.root
             )
 --------------------------------------}
+
+      SaveSucceed sRes ->  -- String
+            ( { model | output = toString sRes }
+            , Cmd.none
+            )
+
+      SaveFail err ->  -- Http.Error
+            ( { model | output = toString err }
+            , Cmd.none
+            )
+
+
+
+type alias SaveResult =
+  { id  : String
+  , cmd : String
+  }
+
+decodeSaved : JD.Decoder SaveResult
+--decodeSaved =
+--  JD.tuple2 SaveResult JD.string JD.string
+decodeSaved =
+  JD.object2 SaveResult
+    ("id"  := JD.string)
+    ("cmd" := JD.string)
+
+saveJob : W.Node -> Cmd Msg
+saveJob node =
+  let
+    url = "/job/RSync"
+    body_s = JE.encode 2 (W.jsonValue node)
+    postCall = Http.post decodeSaved url (Http.string body_s)
+  in
+    Task.perform SaveFail SaveSucceed postCall
+
 
 
 -- VIEW
@@ -168,7 +227,7 @@ view model =
   table [] [
     Html.App.map CallWidget (W.viewTR ".." model.root)
   , tr [] [ td [] [
-      button [ onClick Run ] [ text "Run" ]
+      button [ onClick Save ] [ text "Save" ]
     , h3 [] [ text "Output" ]
     , text model.output
     , h4 [] [ text "debug" ]
