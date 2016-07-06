@@ -63,40 +63,24 @@ type alias Model =
 init : (Model, Cmd Msg)
 init =
   let
---    folder id name =
---      W.aString (id ++ "F") (name ++ " Folder")
-    folder id =
-      W.aString (id ++ "F") "Folder"
---    host id name =
---      W.aString (id ++ "H") (name ++ " Host")
-    host id =
-      W.aString (id ++ "H") "Host"
---    user id name =
---      W.aString (id ++ "U") (name ++ " User")
-    user id =
-      W.aString (id ++ "U") "User"
---    nwport id name =
---      W.aString (id ++ "P") (name ++ " Port")
-    nwport id =
-      W.aString (id ++ "P") "Port"
+    folder id = W.aString (id ++ "F") "Folder"
+    host   id = W.aString (id ++ "H") "Host"
+    user   id = W.aString (id ++ "U") "User"
+    nwport id = W.aString (id ++ "P") "Port"
 
-    -- localFolder id name =
-      -- folder (id ++ "L")  (name ++ " Local")
     localFolder id =
-      W.aVertical (id ++ "L") "Local" [  -- (name ++ " Remote Shell") [
-        folder (id ++ "L")  -- "Local"
+      W.aVertical (id ++ "L") "Local" [
+        folder (id ++ "L")
       ]
 
-    remoteShell id =  -- name =
-      -- W.aVertical (id ++ "RS") (name ++ " Remote Shell") [
+    remoteShell id =
       W.aVertical (id ++ "RS") "Remote Shell" [
-        user    (id ++ "RS") -- (name ++ " Remote Shell")
-      , host    (id ++ "RS") -- (name ++ " Remote Shell")
-      , folder  (id ++ "RS") -- (name ++ " Remote Shell")
+        user    (id ++ "RS")
+      , host    (id ++ "RS")
+      , folder  (id ++ "RS")
       ]
     
-    remoteDaemon id =  -- name =
-      -- W.aVertical (id ++ "RS") (name ++ " Remote Shell") [
+    remoteDaemon id =
       W.aVertical (id ++ "RD") "Remote Daemon" [
         user    (id ++ "RD") -- (name ++ " Remote Shell")
       , host    (id ++ "RD") -- (name ++ " Remote Shell")
@@ -106,10 +90,20 @@ init =
     
     srcLocation =
       W.aSwitch "src" "Source" [
-        localFolder "src"   -- "Source"
-      , remoteShell "src" -- "Source"
+        localFolder  "src"
+      , remoteShell  "src"
       , remoteDaemon "src"
       ]
+
+    tgtLocation =
+      W.aSwitch "tgt" "Target" [
+        localFolder  "tgt"
+      , remoteShell  "tgt"
+      , remoteDaemon "tgt"
+      ]
+
+    location =
+      W.aHorizontal "loc" "Location" [ srcLocation, tgtLocation ]
 
   {-----------------------------------------------------
     werbose = W.aBool "w" "Werbose" False
@@ -125,7 +119,7 @@ init =
     ( root, nodes ) = W.aRoot "RSync" [switch1]
   -----------------------------------------------------}
     
-    ( root, nodes ) = W.aRoot "RSync" [srcLocation]
+    ( root, nodes ) = W.aRoot "RSync" [ location ]  -- srcLocation, tgtLocation ]
   in
     ( Model "" "" root
     , Cmd.none )
