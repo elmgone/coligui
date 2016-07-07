@@ -16,7 +16,7 @@ module Widget exposing (
     Node, Msg
   , aRoot, aVertical, aHorizontal, aSwitch, aBool, aString
   --, Commander
-  , gKidsFmt
+  , gKidsSeq, gKidsById
 
   , update
   , viewTR
@@ -32,6 +32,7 @@ import Json.Encode as JE
 --import Json.Decode as JD
 import Regex as RX   -- exposing (regex) as RX
 import String exposing (..)
+import Dict   -- as Di  --  exposing (..)
 
 -- MODEL
 
@@ -70,12 +71,20 @@ type Commander
     -- KidsFmtCmdr sFmt sSep
     -- cmdlet = sprintf sFmt ( join ( ListOf ( cmdOf kid ) ) sSep )
     -- order of kids is unchanged / unchangable
+  | KidsByIdCmdr String String
+    -- KidsByIdCmdr sFmt sSep
+    -- cmdlet = sprintf sFmt ( join ( ListOf ( cmdOf kid ) SortedById ) sSep )
+    -- order of kids is sorted by their Ids
   | EmptyCmdr
 
 
-gKidsFmt : String -> String -> Commander
-gKidsFmt cmdFmt listSep =
+gKidsSeq : String -> String -> Commander
+gKidsSeq cmdFmt listSep =
   KidsFmtCmdr cmdFmt listSep
+
+gKidsById : String -> String -> Commander
+gKidsById cmdFmt listSep =
+  KidsByIdCmdr cmdFmt listSep
 
 aRoot : String -> String -> List Node -> ( Node, List Node )
 aRoot label cmdFmt kidsList =
@@ -218,11 +227,20 @@ cmdOf node =
       -- RX.replace RX.All (RX.regex ("{{" ++ kid.id ++ "}}")) (\_ -> (cmdOf kid)) str
       sprintf str  ( "{{" ++ kid.id ++ "}}" )  ( cmdOf kid )
 
-    
+    cmdListOfKids node =
+      List.map (\ kid -> cmdOf kid) (kids node)
+    cmdsOfKids node listSep =
+      join listSep ( cmdListOfKids node )
 
---    kl = join "|" ( List.map (\ kid -> "{{" ++ kid.id ++ "}}") (kids node) )
---    sprintfX sFmt param =
---      RX.replace RX.All (RX.regex "({{}}|%s)") (\_ -> param) sFmt
+--    kidsByIdList node =
+  --    List.map (\ k -> (k.id, k)) (kids node)
+    kidsCmdletsByIdList node =
+      List.map (\ k -> (k.id, cmdOf k)) (kids node)
+    kidsCmdletsByIdDict node =
+      Debug.log "kids Cmdlets By Id Dict" ( Dict.fromList ( kidsCmdletsByIdList node ) )
+    kidsCmdletsListByIds node =
+      snd ( List.unzip ( Dict.toList ( kidsCmdletsByIdDict node ) ) )
+
   in
       case node.cmdr of
         BoolCmdr cmdTrue cmdFalse ->
@@ -240,9 +258,14 @@ cmdOf node =
             _ ->
               "!!! NOT A STRING : " ++ (toString node.value)
 
-        KidsFmtCmdr sFmt lSep ->
-          sprintf1 sFmt (join lSep (List.map (\ kid -> cmdOf kid) (kids node)))
-          -- "!!! NOT IMPLEMENTED YET : " ++ (toString node.cmdr)
+        KidsFmtCmdr sFmt listSep ->
+          -- sprintf1 sFmt (join lSep (List.map (\ kid -> cmdOf kid) (kids node)))
+          sprintf1 sFmt ( cmdsOfKids node listSep )
+
+        KidsByIdCmdr sFmt listSep ->
+          -- cmdlet = sprintf sFmt ( join ( ListOf ( cmdOf kid ) SortedById ) sSep )
+          -- order of kids is sorted by their Ids
+          sprintf1 sFmt ( join listSep ( kidsCmdletsListByIds node ) )
 
         EmptyCmdr ->
           "!!! EMPTY : " ++ (toString node.cmdr)

@@ -16,7 +16,8 @@ module RSync exposing (Model, Msg, init, update, view)
 
 import Widget as W exposing (
     aRoot, aVertical, aHorizontal, aSwitch, aBool, aString
-  , gKidsFmt
+  --, gKidsFmt
+  , gKidsSeq, gKidsById
   )
 
 import Html exposing (..)
@@ -112,13 +113,17 @@ init =
       aHorizontal "loc" "Location" "" [ srcLocation, tgtLocation ]
 ------------------------------------------------------------}
 
-    verbose = aBool "verbose" "Verbose" False "--verbose" "--quiet"
-    name    = aString "name" "Your Name" "herName='{{}}'"
+    verbose whose = aBool ("1verbose" ++ whose) "Verbose" False "--verbose" "--quiet"
+    -- name whose = aString ("2name" ++ whose) (whose ++ " Name") (whose ++ "Name='{{}}'")
+    fullname whose = aString ("2name" ++ whose) (whose ++ " Name") (whose ++ "Name='{{}}'")
 
-    person =
-      aVertical "ps" "Person" [name, verbose] (gKidsFmt ("person({{}})") ", ")
+    -- gKidsSeq, gKidsById
+    fperson =
+      aVertical "ps" "Person" [fullname "Her", verbose "Her"] (gKidsSeq ("seq({{}})") ", ")
+    mperson =
+      aVertical "ps" "Person" [fullname "His", verbose "his"] (gKidsById ("byId({{}})") ", ")
 
-    --( root, nodes ) = aRoot "RSync" "rsync %s" [ verbose, name ]
+    ( root, nodes ) = aRoot "RSync" "rsync {{}}" [ fperson, mperson ]
 
   {-----------------------------------------------------
     werbose = aBool "w" "Werbose" False
@@ -137,7 +142,7 @@ init =
     --( root, nodes ) = aRoot "RSync" "rsync %s" [ verbose, locations ]
     --( root, nodes ) = aRoot "RSync" "rsync %s" [ verbose, name ]
   in
-    ( Model "" "" person  -- root
+    ( Model "" "" root
     , Cmd.none )
 
 
