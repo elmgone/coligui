@@ -8,7 +8,7 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
-	"strings"
+	//	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -28,33 +28,33 @@ type (
 		Type     string
 		Label    string
 		Value    interface{}
-		CmdFmt   string
+		CmdLet   string
 		Kids     []*Node
-		IsActive bool `json:"active"`
+		IsActive *bool `json:"active"`
 	}
 
 	nodesById_M   map[string]*Node
 	cmdletsById_M map[string]string
 )
 
-func (node *Node) ProcessTree( //--nodesById_m nodesById_M,
-//	activate bool,
-//) (nodesById_M, cmdletsById_M) {
-) string {
-	nodesById_m := make(nodesById_M)
-	cmdletsById_m := make(cmdletsById_M)
+//func (node *Node) ProcessTree( //--nodesById_m nodesById_M,
+////	activate bool,
+////) (nodesById_M, cmdletsById_M) {
+//) string {
+//	nodesById_m := make(nodesById_M)
+//	cmdletsById_m := make(cmdletsById_M)
 
-	cnf := func(n *Node) {
-		n.CheckNode(nodesById_m)
-		n.ProcessNode(cmdletsById_m)
-	}
+//	cnf := func(n *Node) {
+//		n.CheckNode(nodesById_m)
+//		//		n.ProcessNode(cmdletsById_m)
+//	}
 
-	node.WalkTree(true, //--activate,
-		cnf)
+//	node.WalkTree(true, //--activate,
+//		cnf)
 
-	//	return nodesById_m, cmdletsById_m
-	return cmdletsById_m[node.Id]
-}
+//	//	return nodesById_m, cmdletsById_m
+//	return cmdletsById_m[node.Id]
+//}
 
 func (node *Node) CheckNode(nodesById_m nodesById_M) { //--}, activate bool) {
 	_, ok := nodesById_m[node.Id]
@@ -64,75 +64,76 @@ func (node *Node) CheckNode(nodesById_m nodesById_M) { //--}, activate bool) {
 	nodesById_m[node.Id] = node
 }
 
-func (node *Node) ProcessNode(cmdletsById_m cmdletsById_M) string {
-	if !node.IsActive {
-		log.Printf("ProcessNode(%s:%s): SKIP\n", node.Type, node.Id)
-		return ""
-	}
+//func (node *Node) ProcessNode(cmdletsById_m cmdletsById_M) string {
+//	//	if !node.IsActive {
+//	if node.IsActive != nil && !*node.IsActive {
+//		log.Printf("ProcessNode(%s:%s): SKIP\n", node.Type, node.Id)
+//		return ""
+//	}
 
-	cmdFmt := node.CmdFmt
-	values_l := make([]interface{}, 0, len(node.Kids)+2)
-	if len(node.Kids) == 0 {
-		if cmdFmt == "" {
-			switch val := node.Value.(type) {
-			case bool:
-				panic("MISSING fmt for Bool value " + node.Id)
-			case string:
-				if val == "" {
-					return ""
-				}
-			default:
-				panic(fmt.Sprintf("UNKNOWN DATA TYPE : %T (%#v)", val, val))
-			}
+//	cmdFmt := node.CmdFmt
+//	values_l := make([]interface{}, 0, len(node.Kids)+2)
+//	if len(node.Kids) == 0 {
+//		if cmdFmt == "" {
+//			switch val := node.Value.(type) {
+//			case bool:
+//				panic("MISSING fmt for Bool value " + node.Id)
+//			case string:
+//				if val == "" {
+//					return ""
+//				}
+//			default:
+//				panic(fmt.Sprintf("UNKNOWN DATA TYPE : %T (%#v)", val, val))
+//			}
 
-			//			if node.Type == "Bool" {
-			//				panic("MISSING fmt for Bool value " + node.Id)
-			//			} //--else {
-			cmdFmt = "%v"
-			//			}
-		}
-		values_l = append(values_l, node.Value)
-		//		cmdlet := fmt.Sprintf(cmdFmt, node.Value)
-		//		cmdletsById_m[node.Id] = cmdlet
+//			//			if node.Type == "Bool" {
+//			//				panic("MISSING fmt for Bool value " + node.Id)
+//			//			} //--else {
+//			cmdFmt = "%v"
+//			//			}
+//		}
+//		values_l = append(values_l, node.Value)
+//		//		cmdlet := fmt.Sprintf(cmdFmt, node.Value)
+//		//		cmdletsById_m[node.Id] = cmdlet
 
-		//		return cmdlet
-	} else {
-		if cmdFmt == "" {
-			cf_l := make([]string, 0, len(node.Kids)+2)
-			//			cf_l[0] = "%[1]v"
-			iKid := 1
-			for _ /*i*/, k := range node.Kids {
-				if !k.IsActive {
-					continue
-				}
-				cf_l = append(cf_l, fmt.Sprintf("%%[%d]v", iKid)) //-- i+1)) //--, k.Value))
-				kVal, ok := cmdletsById_m[k.Id]
-				if !ok {
-					panic("Could not find ID " + k.Id)
-				}
-				values_l = append(values_l, kVal)
-				iKid++
-			}
-			cmdFmt = strings.Join(cf_l, " ")
-			//		}
-		}
-	}
+//		//		return cmdlet
+//	} else {
+//		if cmdFmt == "" {
+//			cf_l := make([]string, 0, len(node.Kids)+2)
+//			//			cf_l[0] = "%[1]v"
+//			iKid := 1
+//			for _ /*i*/, k := range node.Kids {
+//				if !k.IsActive {
+//					continue
+//				}
+//				cf_l = append(cf_l, fmt.Sprintf("%%[%d]v", iKid)) //-- i+1)) //--, k.Value))
+//				kVal, ok := cmdletsById_m[k.Id]
+//				if !ok {
+//					panic("Could not find ID " + k.Id)
+//				}
+//				values_l = append(values_l, kVal)
+//				iKid++
+//			}
+//			cmdFmt = strings.Join(cf_l, " ")
+//			//		}
+//		}
+//	}
 
-	cmdlet := fmt.Sprintf(cmdFmt, values_l...)
-	if node.Type == "Bool" {
-		isTrue := node.Value.(bool)
-		if isTrue {
-			cmdlet = cmdFmt
-		} else {
-			cmdlet = ""
-		}
-	}
-	log.Printf("ProcessNode(%s:%s): c=''%s'', c1=''%s'', c0=''%s'', vs=%v\n",
-		node.Type, node.Id, cmdlet, cmdFmt, node.CmdFmt, values_l)
-	cmdletsById_m[node.Id] = cmdlet
+//	cmdlet := fmt.Sprintf(cmdFmt, values_l...)
+//	if node.Type == "Bool" {
+//		isTrue := node.Value.(bool)
+//		if isTrue {
+//			cmdlet = cmdFmt
+//		} else {
+//			cmdlet = ""
+//		}
+//	}
+//	log.Printf("ProcessNode(%s:%s): c=''%s'', c1=''%s'', c0=''%s'', vs=%v\n",
+//		node.Type, node.Id, cmdlet, cmdFmt, node.CmdFmt, values_l)
+//	cmdletsById_m[node.Id] = cmdlet
 
-	return cmdlet
-}
+//	return cmdlet
+//}
 
 //func (node *Node) ProcessNode(cmdletsById_m cmdletsById_M) string {
 //	cmdFmt := node.CmdFmt
@@ -159,24 +160,24 @@ func (node *Node) ProcessNode(cmdletsById_m cmdletsById_M) string {
 //	return cmdlet
 //}
 
-//func (node *Node) WalkTree(nodesById_m nodesById_M, activate bool) {
-func (node *Node) WalkTree(activate bool, cnf func(*Node)) {
-	//	node.IsActive = activate
-	//	cnf(node)
+////func (node *Node) WalkTree(nodesById_m nodesById_M, activate bool) {
+//func (node *Node) WalkTree(activate bool, cnf func(*Node)) {
+//	//	node.IsActive = activate
+//	//	cnf(node)
 
-	for _, kid := range node.Kids {
-		kidActive := activate
-		if activate && node.Type == "Switch" {
-			sId := node.Value.(string)
-			kidActive = (kid.Id == sId)
-		}
+//	for _, kid := range node.Kids {
+//		kidActive := activate
+//		if activate && node.Type == "Switch" {
+//			sId := node.Value.(string)
+//			kidActive = (kid.Id == sId)
+//		}
 
-		kid.WalkTree(kidActive, cnf)
-	}
+//		kid.WalkTree(kidActive, cnf)
+//	}
 
-	node.IsActive = activate
-	cnf(node)
-}
+//	node.IsActive = activate
+//	cnf(node)
+//}
 
 func ServeGin(port int) error {
 	router := gin.Default()
@@ -211,7 +212,9 @@ func ServeGin(port int) error {
 			c.AbortWithError(http.StatusBadRequest, err)
 			return
 		}
-		cmdRes := node.ProcessTree()
+		//		cmdRes := node.ProcessTree()
+		//		fmt.Printf("got '%s': '''%s''' from %#v\n", cmd_s, cmdRes, node)
+		cmdRes := node.CmdLet
 		fmt.Printf("got '%s': '''%s''' from %#v\n", cmd_s, cmdRes, node)
 
 		node_b, err := json.Marshal(node)

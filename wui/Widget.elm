@@ -28,6 +28,7 @@ import Html.Attributes exposing (..)
 import Html.App
 import Json.Encode as JE
 --import Json.Decode as JD
+import Regex as RX   -- exposing (regex) as RX
 
 -- MODEL
 
@@ -113,20 +114,38 @@ toJson indent node =
 jsonValue : Node -> JE.Value
 jsonValue node =
   let
-    (val, typ) =
+    (val, typ, boolState, strValue) =
       case node.value of
         BoolValue b ->
-          (JE.bool b, "Bool")
+          (JE.bool b, "Bool",
+           if b then 1 else 2, "!!!")
         StringValue s ->
-          (JE.string s, "String")
+          (JE.string s, "String", 0, s)
         RootCmd ->
-          (JE.string node.label, "Root")
+          (JE.string node.label, "Root", 0, "!!!")
         VerGroup ->
-          (JE.string node.label, "VerticalGroup")
+          (JE.string node.label, "VerticalGroup", 0, "!!!")
         HorGroup ->
-          (JE.string node.label, "HorizontalGroup")
+          (JE.string node.label, "HorizontalGroup", 0, "!!!")
         Switch sid ->
-          (JE.string sid, "Switch")
+          (JE.string sid, "Switch", 0, "!!!")
+
+    -- devowel = replace All (regex "[aeiou]") (\_ -> "")
+    sprintf = RX.replace RX.All (RX.regex "({}|%s)") (\_ -> strValue)
+    cmdlet =
+      case node.cmdr of
+        BoolCmdr cmdTrue cmdFalse ->
+          if boolState == 1 then cmdTrue
+          else if boolState == 2 then cmdFalse
+          else ""
+        StringCmdr cmdFmt ->
+          sprintf cmdFmt
+        _ ->
+          "not implemented yet"
+
+
+
+
 
     kids_l = kids node
     extra =
@@ -140,6 +159,7 @@ jsonValue node =
     , ( "label", JE.string node.label )
     , ( "type", JE.string typ )
     , ( "value", val )
+    , ( "cmdlet", JE.string cmdlet )
     -- , ( "cmdFmt", JE.string node.cmdFmt )
     -- , ( "active", JE.bool node.isActive )
     ] ++ extra )
