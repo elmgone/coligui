@@ -212,8 +212,8 @@ cmdOf node =
     cmdListOfKids node =
       List.map (\ kid -> cmdOf kid) (kids node)
     
-    cmdsOfKids : Node -> String -> String
-    cmdsOfKids node listSep =
+    cmdsOfKids : String -> Node -> String
+    cmdsOfKids listSep node =
       join listSep ( cmdListOfKids node )
 
     kidsCmdletsByIdList : Node -> List (Id, String)
@@ -235,7 +235,7 @@ cmdOf node =
         _ ->
           ""
 
-  in
+    resultCmdlet =
       case node.cmdr of
         BoolCmdr cmdTrue cmdFalse ->
           case node.value of
@@ -255,8 +255,7 @@ cmdOf node =
               --Debug.crash ("!!! NOT A STRING : " ++ (toString node.value))
 
         KidsListCmdr sFmt listSep ->
-          -- sprintf1 sFmt (join lSep (List.map (\ kid -> cmdOf kid) (kids node)))
-          sprintf1 sFmt ( cmdsOfKids node listSep )
+          sprintf1 sFmt ( cmdsOfKids listSep node )
 
         KidsByIdCmdr sFmt listSep ->
           -- cmdlet = sprintf sFmt ( join ( ListOf ( cmdOf kid ) SortedById ) sSep )
@@ -275,6 +274,9 @@ cmdOf node =
           --Debug.crash ("!!! EMPTY : " ++ (toString node.cmdr))
           "!!! EMPTY : " ++ (toString node.cmdr)
 -------------------------------------------}
+
+  in
+    Debug.log ("cmdOf " ++ node.id) resultCmdlet
 
 
 getSelectedKid : Id -> Node -> Maybe Node
