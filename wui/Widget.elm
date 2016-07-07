@@ -20,7 +20,9 @@ module Widget exposing (
 
   , update
   , viewTR
-  , toJson
+  , treeToJson, nodeToJson  --, toJson
+
+  , nodeAsLI
   )
 
 
@@ -134,72 +136,43 @@ flatKidsList : Node -> List Node
 flatKidsList node =
   List.foldl List.append [] (List.map flatKidsList (kids node))
 
-toJson : Int -> Node -> String
-toJson indent node =
-  JE.encode indent (jsonValue node)
+treeToJson : Int -> Node -> String
+treeToJson indent node =
+  JE.encode indent (jsonValueRec True node)
 
-jsonValue : Node -> JE.Value
-jsonValue node =
+nodeToJson : Int -> Node -> String
+nodeToJson indent node =
+  JE.encode indent (jsonValueRec False node)
+
+--jsonValue : Node -> JE.Value
+--jsonValue node =
+--  jsonValueRec True node
+    
+jsonValueRec : Bool -> Node -> JE.Value
+jsonValueRec recurse node =
   let
     --(val, typ, boolState, strValue) =
     (val, typ) =
       case node.value of
         BoolValue b ->
-          ( JE.bool b, "Bool"
-          --, if b then 1 else 2, "!!!"
-          )
+          ( JE.bool b, "Bool" )
         StringValue s ->
-          ( JE.string s, "String"
-          --, 0, s
-          )
+          ( JE.string s, "String" )
         RootCmd ->
-          ( JE.string node.label, "Root"
-          --, 0, "!!!"
-          )
+          ( JE.string node.label, "Root" )
         VerGroup ->
-          ( JE.string node.label, "VerticalGroup"
-          --, 0, "!!!"
-          )
+          ( JE.string node.label, "VerticalGroup" )
         HorGroup ->
-          ( JE.string node.label, "HorizontalGroup"
-          --, 0, "!!!"
-          )
+          ( JE.string node.label, "HorizontalGroup" )
         Switch sid ->
-          ( JE.string sid, "Switch"
-          --, 0, "!!!"
-          )
-
-    -- devowel = replace All (regex "[aeiou]") (\_ -> "")
-
-{------------------------------------------------
-    insertNodeValue sFmt nId nVal =
-      RX.replace RX.All ( RX.regex ("{{" ++ kid.id ++ "}}") ) (\_ -> kid.) sFmt
-    sprintf sFmt param =
-      RX.replace RX.All (RX.regex "({{}}|%s)") (\_ -> param) sFmt
-    kl = join "|" ( List.map (\ kid -> "{{" ++ kid.id ++ "}}") (kids node) )
-    sprintfX sFmt param =
-      RX.replace RX.All (RX.regex "({{}}|%s)") (\_ -> param) sFmt
-    cmdlet =
-      case node.cmdr of
-        BoolCmdr cmdTrue cmdFalse ->
-          if boolState == 1 then cmdTrue
-          else if boolState == 2 then cmdFalse
-          else ""
-        StringCmdr cmdFmt ->
-          sprintf cmdFmt strValue
-        KidsFmtCmdr sFmt ->
-          "!!! EMPTY !!!"
-        EmptyCmdr ->
-          "!!! EMPTY !!!"
-------------------------------------------------}
-
+          ( JE.string sid, "Switch" )
 
     cmdlet = cmdOf node
 
     kids_l = kids node
     extra =
-      if List.length kids_l > 0 then
-        [ ( "kids", JE.list ( List.map jsonValue kids_l ) ) ]
+      if recurse && List.length kids_l > 0 then
+        [ ( "kids", JE.list ( List.map (jsonValueRec recurse) kids_l ) ) ]
       else
         []
   in
@@ -212,6 +185,17 @@ jsonValue node =
     -- , ( "cmdFmt", JE.string node.cmdFmt )
     -- , ( "active", JE.bool node.isActive )
     ] ++ extra )
+
+
+nodeAsLI : Node -> Html Msg
+nodeAsLI node =
+      li [] [ text ( nodeToJson 2 node )
+      , kidsAsUL node
+      ]
+
+kidsAsUL : Node -> Html Msg
+kidsAsUL node =
+      ul [] ( List.map (\ k -> nodeAsLI k) ( kids node ) )
 
 
 cmdOf : Node -> String

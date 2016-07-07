@@ -178,7 +178,7 @@ update msg model =
       Save ->
         let
           --data = JE.encode 2 ( W.jsonValue model.root )
-          data = W.toJson 2 model.root
+          data = W.treeToJson 2 model.root
         in
             ( { model | output = data }
             , saveJob model.root
@@ -213,7 +213,7 @@ saveJob node =
   let
     url = "/job/RSync"
     --body_s = JE.encode 2 (W.jsonValue node)
-    body_s = W.toJson 2 node
+    body_s = W.treeToJson 2 node
     postCall = Http.post decodeSaved url (Http.string body_s)
   in
     Task.perform SaveFail SaveSucceed postCall
@@ -224,16 +224,25 @@ saveJob node =
 
 view : Model -> Html Msg
 view model =
-  table [] [
-    Html.App.map CallWidget (W.viewTR ".." model.root)
-  , tr [] [ td [] [
-      button [ onClick Save ] [ text "Save" ]
-    , h3 [] [ text "Output" ]
-    , text model.output
-    , h4 [] [ text "debug" ]
-    --, text (JE.encode 2 ( W.jsonValue model.root ))
-    , text ( W.toJson 2 model.root )
-    ] ]
+  let
+    dbg =
+      div [] [
+        h4 [] [ text "debug" ]
+      , ul [] [ W.nodeAsLI model.root ]
+      ]
+      
+  in
+    table [] [
+      Html.App.map CallWidget (W.viewTR ".." model.root)
+    , tr [] [ td [] [
+        button [ onClick Save ] [ text "Save" ]
+      , h3 [] [ text "Output" ]
+      , text model.output
+      --, h4 [] [ text "debug" ]
+      --, text ( W.toJson 2 model.root )
+      --, text ("root = " ++ dbg)
+      , Html.App.map CallWidget dbg
+      ] ]
 
   {----------------------------------------- }
   , ul [] [
@@ -241,7 +250,7 @@ view model =
     ]
   -----------------------------------------}
 
-  ]
+    ]
 
 
 {----------------------------------------- }
