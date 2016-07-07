@@ -17,7 +17,7 @@ module RSync exposing (Model, Msg, init, update, view)
 import Widget as W exposing (
     aRoot, aVertical, aHorizontal, aSwitch, aBool, aString
   --, gKidsFmt
-  , gKidsSeq, gKidsById
+  , fmtKidsList, fmtKidsById
   )
 
 import Html exposing (..)
@@ -117,14 +117,14 @@ init =
     -- name whose = aString ("2name" ++ whose) (whose ++ " Name") (whose ++ "Name='{{}}'")
     fullname whose = aString ("2name" ++ whose) (whose ++ " Name") (whose ++ "Name='{{}}'")
 
-    -- gKidsSeq, gKidsById
+    -- fmtKidsList, fmtKidsById
     fperson =
-      aHorizontal "2fps" "Person" [fullname "Her", verbose "Her"] (gKidsSeq ("SHE:seq({{}})") ", ")
+      aHorizontal "2fps" "Person" [fullname "Her", verbose "Her"] (fmtKidsList ("SHE:seq({{}})") ", ")
     mperson =
-      aVertical "1mps" "Person" [fullname "His", verbose "his"] (gKidsById ("HE:byId({{}})") ", ")
+      aVertical "1mps" "Person" [fullname "His", verbose "his"] (fmtKidsById ("HE:byId({{}})") ", ")
 
     --( root, nodes ) = aRoot "RSync" "rsync {{}}" [ fperson, mperson ]
-    ( root, nodes ) = aRoot "RSync" [ fperson, mperson ] (gKidsById ("rsync {{}} # by id") " && ")
+    ( root, nodes ) = aRoot "RSync" [ fperson, mperson ] (fmtKidsById ("rsync {{}} # by id") " && ")
 
   {-----------------------------------------------------
     werbose = aBool "w" "Werbose" False

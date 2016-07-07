@@ -16,7 +16,7 @@ module Widget exposing (
     Node, Msg
   , aRoot, aVertical, aHorizontal, aSwitch, aBool, aString
   --, Commander
-  , gKidsSeq, gKidsById
+  , fmtKidsList, fmtKidsById
 
   , update
   , viewTR
@@ -69,8 +69,8 @@ type Commander
   | StringCmdr String
     -- StringCmdr sFmt
     -- cmdlet = sprintf sFmt ( cmdOf kid )
-  | KidsFmtCmdr String String
-    -- KidsFmtCmdr sFmt sSep
+  | KidsListCmdr String String
+    -- KidsListCmdr sFmt sSep
     -- cmdlet = sprintf sFmt ( join ( ListOf ( cmdOf kid ) ) sSep )
     -- order of kids is unchanged / unchangable
   | KidsByIdCmdr String String
@@ -80,12 +80,12 @@ type Commander
   | EmptyCmdr
 
 
-gKidsSeq : String -> String -> Commander
-gKidsSeq cmdFmt listSep =
-  KidsFmtCmdr cmdFmt listSep
+fmtKidsList : String -> String -> Commander
+fmtKidsList cmdFmt listSep =
+  KidsListCmdr cmdFmt listSep
 
-gKidsById : String -> String -> Commander
-gKidsById cmdFmt listSep =
+fmtKidsById : String -> String -> Commander
+fmtKidsById cmdFmt listSep =
   KidsByIdCmdr cmdFmt listSep
 
 --aRoot : String -> String -> List Node -> ( Node, List Node )
@@ -103,7 +103,7 @@ aRoot label kidsList cmdr =
 --aVertical id label cmdFmt kidsList =
 aVertical : String -> String -> List Node -> Commander -> Node
 aVertical id label kidsList cmdr =
---  Node (id ++ "-VG") label VerGroup (KidsList kidsList) (KidsFmtCmdr cmdFmt)  -- (StringCmdr cmdFmt)
+--  Node (id ++ "-VG") label VerGroup (KidsList kidsList) (KidsListCmdr cmdFmt)  -- (StringCmdr cmdFmt)
   Node (id ++ "-VG") label VerGroup (KidsList kidsList) cmdr  -- (StringCmdr cmdFmt)
 
 --aHorizontal : String -> String -> String -> List Node -> Node
@@ -259,7 +259,7 @@ cmdOf node =
               "!!! NOT A STRING : " ++ (toString node.value)
               --Debug.crash ("!!! NOT A STRING : " ++ (toString node.value))
 
-        KidsFmtCmdr sFmt listSep ->
+        KidsListCmdr sFmt listSep ->
           -- sprintf1 sFmt (join lSep (List.map (\ kid -> cmdOf kid) (kids node)))
           sprintf1 sFmt ( cmdsOfKids node listSep )
 
