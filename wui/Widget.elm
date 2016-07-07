@@ -31,6 +31,21 @@ import Json.Encode as JE
 
 -- MODEL
 
+type alias Node =
+  { id       : Id
+  , label    : String
+  , value    : Value
+  --, cmdFmt   : String
+  , kids     : Kids
+  , cmdr     : Commander
+  --, isActive : Bool
+  }
+
+type alias Id = String
+
+type Kids
+  = KidsList ( List Node )
+
 type Value
   = BoolValue Bool
   | StringValue String
@@ -40,35 +55,27 @@ type Value
   | Switch Id
   --| Tabs Id
 
-type alias Id = String
+type Commander
+  = BoolCmdr String String
+  | StringCmdr String
+  | EmptyCmdr
 
-type alias Node =
-  { id       : Id
-  , label    : String
-  , value    : Value
-  , cmdFmt   : String
-  , kids     : Kids
-  --, isActive : Bool
-  }
-
-type Kids
-  = KidsList ( List Node )
 
 aRoot : String -> String -> List Node -> ( Node, List Node )
 aRoot label cmdFmt kidsList =
   let
-    rootNode = Node "root" label RootCmd cmdFmt (KidsList kidsList)
+    rootNode = Node "root" label RootCmd (KidsList kidsList) (StringCmdr cmdFmt)
     grandKids = flatKidsList rootNode
   in
     ( rootNode, rootNode :: grandKids )
 
 aVertical : String -> String -> String -> List Node -> Node
 aVertical id label cmdFmt kidsList =
-  Node (id ++ "-VG") label VerGroup cmdFmt (KidsList kidsList)  -- True
+  Node (id ++ "-VG") label VerGroup (KidsList kidsList) (StringCmdr cmdFmt)
 
 aHorizontal : String -> String -> String -> List Node -> Node
 aHorizontal id label cmdFmt kidsList =
-  Node (id ++ "-HG") label HorGroup cmdFmt (KidsList kidsList)  -- True
+  Node (id ++ "-HG") label HorGroup (KidsList kidsList) (StringCmdr cmdFmt)
 
 aSwitch : String -> String -> List Node -> Node
 aSwitch id label kidsList =
@@ -79,15 +86,15 @@ aSwitch id label kidsList =
         Nothing  -> ""
         Just kid -> kid.id
   in
-    Node (id ++ "-SW") label (Switch fkid) "" (KidsList kidsList)  -- True
+    Node (id ++ "-SW") label (Switch fkid) (KidsList kidsList) EmptyCmdr
 
-aBool : Id -> String -> String -> Bool -> Node
-aBool id label cmdFmt flag =
-  Node (id ++ "_B") label (BoolValue flag) cmdFmt (KidsList [])  -- True
+aBool : Id -> String -> Bool -> String -> String -> Node
+aBool id label flag cmdTrue cmdFalse =
+  Node (id ++ "_B") label (BoolValue flag) (KidsList []) (BoolCmdr cmdTrue cmdFalse)
 
 aString : Id -> String -> String -> Node
 aString id label cmdFmt =
-  Node (id ++ "_S") label (StringValue "") cmdFmt (KidsList [])  -- True
+  Node (id ++ "_S") label (StringValue "") (KidsList []) (StringCmdr cmdFmt)
 
 kids : Node -> List Node
 kids node =
@@ -120,7 +127,7 @@ jsonValue node =
           (JE.string node.label, "HorizontalGroup")
         Switch sid ->
           (JE.string sid, "Switch")
-    
+
     kids_l = kids node
     extra =
       if List.length kids_l > 0 then
@@ -133,7 +140,7 @@ jsonValue node =
     , ( "label", JE.string node.label )
     , ( "type", JE.string typ )
     , ( "value", val )
-    , ( "cmdFmt", JE.string node.cmdFmt )
+    -- , ( "cmdFmt", JE.string node.cmdFmt )
     -- , ( "active", JE.bool node.isActive )
     ] ++ extra )
 
@@ -145,7 +152,7 @@ get id nodes =
   in
     case optNode of
       Nothing ->
-        aBool id "!!NOT FOUND!!" "!!NOT FOUND!!" False
+        aBool id "!!NOT FOUND!!" False "!!NOT FOUND - TRUE!!" "!!NOT FOUND - FALSE!!"
       Just node ->
         node
 
@@ -187,7 +194,7 @@ updateSingleNode msg node =
             Switch sid ->
               JE.string sid
 ------------------------------------}
-          
+
       in
         if id == node.id then
           ( { node | value = Debug.log ( "update " ++ node.label ) value }
@@ -263,7 +270,7 @@ viewTR parentId node =
         kidsAsTDs_l = List.map (\ kidAsTR -> td [] [ table [] [ kidAsTR ] ]) kidsAsTR_l
       in
         tr [ title (node.label ++ " " ++ node.id) ] kidsAsTDs_l
-  
+
     Switch sid ->
       {-------------------------------------------}
       let
@@ -281,7 +288,7 @@ viewTR parentId node =
         switchBoard = tr [] [ th [] [
           text node.label
         ]] :: kidsAsRadioTRs_l
-        
+
         optSelectedKid = List.head ( List.filter (\ kid -> kid.id == sid ) kids_l )
         selectedKidTR =
           case optSelectedKid of
@@ -298,7 +305,7 @@ viewTR parentId node =
         , td [] [ table [] [ selectedKidTR ] ]
         ]
       -------------------------------------------}
-  
+
 
 node2TR : Id -> Node -> Html Msg
 node2TR parentId node =
@@ -326,12 +333,12 @@ viewList parentId node =
 --        mkRadioTR (id, lbl) =
 --          tr [] [
 --            td [] [ label [] [ text lbl ] ]
---          , td [] [ 
-          
+--          , td [] [
+
           input [ type' "radio", value parentId, name node.id
                     , onClick (selectSwitch node.id parentId)
                     ] []
-                    
+
 --                     ]
 --          ]
 

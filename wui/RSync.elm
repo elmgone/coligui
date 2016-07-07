@@ -41,7 +41,7 @@ main =
 type alias Model =
   { id        : String
   , output    : String
-  
+
   -- widgets
   , root      : W.Node
   }
@@ -83,7 +83,7 @@ init =
         , host    sid
         , folder  sid
         ]
-    
+
     remoteDaemon id =
       let
         did = id ++ "-RD"
@@ -94,7 +94,7 @@ init =
         , nwport  did
         , folder  did
         ]
-    
+
     location id name =
       aSwitch id name [
         localFolder  id
@@ -108,22 +108,22 @@ init =
     locations =
       aHorizontal "loc" "Location" "" [ srcLocation, tgtLocation ]
 
-    verbose = aBool "verbose" "Verbose" "--verbose" False
-    
+    verbose = aBool "verbose" "Verbose" False "--verbose" "--quiet"
+
   {-----------------------------------------------------
     werbose = aBool "w" "Werbose" False
     srcF    = aString "srcF" "Source Folder"
     verG1   = aVertical "verG1" [ werbose, srcF ]
-    
+
     recursive = aBool "r" "Recursive" False
     tgtF    = aString "tgtF" "Target Folder"
     horG1   = aHorizontal "horG1" [ recursive, tgtF ]
-    
+
     switch1   = aSwitch "switch1" [verG1, horG1]
 
     ( root, nodes ) = aRoot "RSync" [switch1]
   -----------------------------------------------------}
-    
+
     ( root, nodes ) = aRoot "RSync" "rsync %s" [ verbose, locations ]
   in
     ( Model "" "" root
@@ -224,7 +224,7 @@ view model =
       li [] [ text (JE.encode 2 ( W.jsonValue model.root )) ]
     ]
   -----------------------------------------}
-  
+
   ]
 
 
