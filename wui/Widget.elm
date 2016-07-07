@@ -249,7 +249,11 @@ cmdOf node =
         StringFmtr cmdFmt ->
           case node.value of
             StringValue strValue ->
-              sprintf1 cmdFmt strValue
+              if strValue == "" then
+                --strValue
+                ""
+              else
+                sprintf1 cmdFmt strValue
             _ ->
               "!!! NOT A STRING : " ++ (toString node.value)
               --Debug.crash ("!!! NOT A STRING : " ++ (toString node.value))
