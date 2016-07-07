@@ -228,7 +228,7 @@ view model =
     dbg =
       div [] [
         h4 [] [ text "debug" ]
-      , ul [] [ W.nodeAsLI model.root ]
+      , ul [] [ W.nodeAsHtmlLI model.root ]
       ]
       
   in

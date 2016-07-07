@@ -22,7 +22,7 @@ module Widget exposing (
   , viewTR
   , treeToJson, nodeToJson  --, toJson
 
-  , nodeAsLI
+  , nodeAsHtmlLI
   )
 
 
@@ -187,41 +187,50 @@ jsonValueRec recurse node =
     ] ++ extra )
 
 
-nodeAsLI : Node -> Html Msg
-nodeAsLI node =
+nodeAsHtmlLI : Node -> Html Msg
+nodeAsHtmlLI node =
       li [] [ text ( nodeToJson 2 node )
       , kidsAsUL node
       ]
 
 kidsAsUL : Node -> Html Msg
 kidsAsUL node =
-      ul [] ( List.map (\ k -> nodeAsLI k) ( kids node ) )
+      ul [] ( List.map (\ k -> nodeAsHtmlLI k) ( kids node ) )
 
 
 cmdOf : Node -> String
 cmdOf node =
   let
+    sprintf1 : String -> String -> String
     sprintf1 str param =
       RX.replace RX.All (RX.regex "({{}}|%s)") (\_ -> param) str
 
+    sprintf : String -> String -> String -> String
     sprintf str sFmt param =
       RX.replace RX.All (RX.regex sFmt) (\_ -> param) str
 
+    insertNodeValue : String -> Node -> String
     insertNodeValue str kid =
       -- RX.replace RX.All (RX.regex ("{{" ++ kid.id ++ "}}")) (\_ -> (cmdOf kid)) str
       sprintf str  ( "{{" ++ kid.id ++ "}}" )  ( cmdOf kid )
 
+    cmdListOfKids : Node -> List String
     cmdListOfKids node =
       List.map (\ kid -> cmdOf kid) (kids node)
+    
+    cmdsOfKids : Node -> String -> String
     cmdsOfKids node listSep =
       join listSep ( cmdListOfKids node )
 
---    kidsByIdList node =
-  --    List.map (\ k -> (k.id, k)) (kids node)
+    kidsCmdletsByIdList : Node -> List (Id, String)
     kidsCmdletsByIdList node =
       List.map (\ k -> (k.id, cmdOf k)) (kids node)
+    
+    kidsCmdletsByIdDict : Node -> Dict.Dict Id String
     kidsCmdletsByIdDict node =
       Debug.log "kids Cmdlets By Id Dict" ( Dict.fromList ( kidsCmdletsByIdList node ) )
+    
+    kidsCmdletsListByIds : Node -> List String
     kidsCmdletsListByIds node =
       snd ( List.unzip ( Dict.toList ( kidsCmdletsByIdDict node ) ) )
 
