@@ -119,12 +119,13 @@ init =
 
     -- fmtKidsList, fmtKidsById
     fperson =
-      aHorizontal "2fps" "Person" [fullname "Her", verbose "Her"] (fmtKidsList ("SHE:seq({{}})") ", ")
+      aHorizontal "2fps" "Woman" [fullname "Her", verbose "Her"] (fmtKidsList ("SHE:seq({{}})") ", ")
     mperson =
-      aVertical "1mps" "Person" [fullname "His", verbose "his"] (fmtKidsById ("HE:byId({{}})") ", ")
+      aVertical "1mps" "Man" [fullname "His", verbose "his"] (fmtKidsById ("HE:byId({{}})") ", ")
 
     --( root, nodes ) = aRoot "RSync" "rsync {{}}" [ fperson, mperson ]
-    ( root, nodes ) = aRoot "RSync" [ fperson, mperson ] (fmtKidsById ("rsync {{}} # by id") " && ")
+    --( root, nodes ) = aRoot "RSync" [ fperson, mperson ] (fmtKidsById ("rsync {{}} # by id") " && ")
+    root = aSwitch "alt1" "Alternative" [ fperson, mperson ]   -- (fmtKidsById ("rsync {{}} # by id") " && ")
 
   {-----------------------------------------------------
     werbose = aBool "w" "Werbose" False

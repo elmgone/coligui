@@ -77,7 +77,8 @@ type Commander
     -- KidsByIdCmdr sFmt sSep
     -- cmdlet = sprintf sFmt ( join ( ListOf ( cmdOf kid ) SortedById ) sSep )
     -- order of kids is sorted by their Ids
-  | EmptyCmdr
+  | SelectedKidCmdr  -- Id
+  --| EmptyCmdr
 
 
 fmtKidsList : String -> String -> Commander
@@ -88,27 +89,18 @@ fmtKidsById : String -> String -> Commander
 fmtKidsById cmdFmt listSep =
   KidsByIdCmdr cmdFmt listSep
 
---aRoot : String -> String -> List Node -> ( Node, List Node )
---aRoot label cmdFmt kidsList =
 aRoot : String -> List Node -> Commander -> ( Node, List Node )
 aRoot label kidsList cmdr =
   let
-    --rootNode = Node "root" label RootCmd (KidsList kidsList) (StringCmdr cmdFmt)
     rootNode = Node "root" label RootCmd (KidsList kidsList) cmdr
     grandKids = flatKidsList rootNode
   in
     ( rootNode, rootNode :: grandKids )
 
---aVertical : String -> String -> String -> List Node -> Node
---aVertical id label cmdFmt kidsList =
 aVertical : String -> String -> List Node -> Commander -> Node
 aVertical id label kidsList cmdr =
---  Node (id ++ "-VG") label VerGroup (KidsList kidsList) (KidsListCmdr cmdFmt)  -- (StringCmdr cmdFmt)
-  Node (id ++ "-VG") label VerGroup (KidsList kidsList) cmdr  -- (StringCmdr cmdFmt)
+  Node (id ++ "-VG") label VerGroup (KidsList kidsList) cmdr
 
---aHorizontal : String -> String -> String -> List Node -> Node
---aHorizontal id label cmdFmt kidsList =
-  --Node (id ++ "-HG") label HorGroup (KidsList kidsList) (StringCmdr cmdFmt)
 aHorizontal : String -> String -> List Node -> Commander -> Node
 aHorizontal id label kidsList cmdr =
   Node (id ++ "-HG") label HorGroup (KidsList kidsList) cmdr
@@ -122,7 +114,7 @@ aSwitch id label kidsList =
         Nothing  -> ""
         Just kid -> kid.id
   in
-    Node (id ++ "-SW") label (Switch fkid) (KidsList kidsList) EmptyCmdr
+    Node (id ++ "-SW") label (Switch fkid) (KidsList kidsList) SelectedKidCmdr   -- EmptyCmdr
 
 aBool : Id -> String -> Bool -> String -> String -> Node
 aBool id label flag cmdTrue cmdFalse =
@@ -150,10 +142,6 @@ nodeToJson : Int -> Node -> String
 nodeToJson indent node =
   JE.encode indent (jsonValueRec False node)
 
---jsonValue : Node -> JE.Value
---jsonValue node =
---  jsonValueRec True node
-    
 jsonValueRec : Bool -> Node -> JE.Value
 jsonValueRec recurse node =
   let
@@ -240,6 +228,13 @@ cmdOf node =
     kidsCmdletsListByIds node =
       snd ( List.unzip ( Dict.toList ( kidsCmdletsByIdDict node ) ) )
 
+    selectedId node =
+      case node.value of
+        Switch toKidId ->
+          toKidId
+        _ ->
+          ""
+
   in
       case node.cmdr of
         BoolCmdr cmdTrue cmdFalse ->
@@ -267,10 +262,26 @@ cmdOf node =
           -- cmdlet = sprintf sFmt ( join ( ListOf ( cmdOf kid ) SortedById ) sSep )
           -- order of kids is sorted by their Ids
           sprintf1 sFmt ( join listSep ( kidsCmdletsListByIds node ) )
+        
+        SelectedKidCmdr ->
+          case (getSelectedKid (selectedId node) node) of
+            Just kid ->
+              cmdOf kid
+            Nothing ->
+              "!!! NOTHING SELECTED : " ++ (toString node.value)
 
+{-------------------------------------------
         EmptyCmdr ->
           --Debug.crash ("!!! EMPTY : " ++ (toString node.cmdr))
           "!!! EMPTY : " ++ (toString node.cmdr)
+-------------------------------------------}
+
+
+getSelectedKid : Id -> Node -> Maybe Node
+getSelectedKid sid node =
+  -- optSelectedKid = List.head ( List.filter (\ kid -> kid.id == sid ) kids_l )
+  List.head ( List.filter (\ kid -> kid.id == sid ) (kids node) )
+        
 
 
 get : Id -> List Node -> Node
@@ -417,9 +428,11 @@ viewTR parentId node =
           text node.label
         ]] :: kidsAsRadioTRs_l
 
-        optSelectedKid = List.head ( List.filter (\ kid -> kid.id == sid ) kids_l )
+        --optSelectedKid = List.head ( List.filter (\ kid -> kid.id == sid ) kids_l )
+        --optSelectedKid = getSelectedKid node
         selectedKidTR =
-          case optSelectedKid of
+          --case optSelectedKid of
+          case (getSelectedKid sid node) of
             Nothing ->
               tr [ title "please select one switch option" ] [ td [] [
                 text ("(please select one of the options for "
