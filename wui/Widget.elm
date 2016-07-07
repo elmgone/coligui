@@ -14,11 +14,13 @@
 
 module Widget exposing (
     Node, Msg
-  , aRoot, aVertical, aHorizontal, aSwitch
-  , aBool, aString
-  , update  -- , mapUpdate
+  , aRoot, aVertical, aHorizontal, aSwitch, aBool, aString
+  --, Commander
+  , gKidsFmt
+
+  , update
   , viewTR
-  , toJson  --, jsonValue
+  , toJson
   )
 
 
@@ -29,6 +31,7 @@ import Html.App
 import Json.Encode as JE
 --import Json.Decode as JD
 import Regex as RX   -- exposing (regex) as RX
+import String exposing (..)
 
 -- MODEL
 
@@ -58,9 +61,21 @@ type Value
 
 type Commander
   = BoolCmdr String String
+    -- BoolCmdr cTrue cFalse
+    -- cmdlet = if isTrue then cTrue else cFalse
   | StringCmdr String
+    -- StringCmdr sFmt
+    -- cmdlet = sprintf sFmt ( cmdOf kid )
+  | KidsFmtCmdr String String
+    -- KidsFmtCmdr sFmt sSep
+    -- cmdlet = sprintf sFmt ( join ( ListOf ( cmdOf kid ) ) sSep )
+    -- order of kids is unchanged / unchangable
   | EmptyCmdr
 
+
+gKidsFmt : String -> String -> Commander
+gKidsFmt cmdFmt listSep =
+  KidsFmtCmdr cmdFmt listSep
 
 aRoot : String -> String -> List Node -> ( Node, List Node )
 aRoot label cmdFmt kidsList =
@@ -70,9 +85,12 @@ aRoot label cmdFmt kidsList =
   in
     ( rootNode, rootNode :: grandKids )
 
-aVertical : String -> String -> String -> List Node -> Node
-aVertical id label cmdFmt kidsList =
-  Node (id ++ "-VG") label VerGroup (KidsList kidsList) (StringCmdr cmdFmt)
+--aVertical : String -> String -> String -> List Node -> Node
+--aVertical id label cmdFmt kidsList =
+aVertical : String -> String -> List Node -> Commander -> Node
+aVertical id label kidsList cmdr =
+--  Node (id ++ "-VG") label VerGroup (KidsList kidsList) (KidsFmtCmdr cmdFmt)  -- (StringCmdr cmdFmt)
+  Node (id ++ "-VG") label VerGroup (KidsList kidsList) cmdr  -- (StringCmdr cmdFmt)
 
 aHorizontal : String -> String -> String -> List Node -> Node
 aHorizontal id label cmdFmt kidsList =
@@ -114,24 +132,44 @@ toJson indent node =
 jsonValue : Node -> JE.Value
 jsonValue node =
   let
-    (val, typ, boolState, strValue) =
+    --(val, typ, boolState, strValue) =
+    (val, typ) =
       case node.value of
         BoolValue b ->
-          (JE.bool b, "Bool",
-           if b then 1 else 2, "!!!")
+          ( JE.bool b, "Bool"
+          --, if b then 1 else 2, "!!!"
+          )
         StringValue s ->
-          (JE.string s, "String", 0, s)
+          ( JE.string s, "String"
+          --, 0, s
+          )
         RootCmd ->
-          (JE.string node.label, "Root", 0, "!!!")
+          ( JE.string node.label, "Root"
+          --, 0, "!!!"
+          )
         VerGroup ->
-          (JE.string node.label, "VerticalGroup", 0, "!!!")
+          ( JE.string node.label, "VerticalGroup"
+          --, 0, "!!!"
+          )
         HorGroup ->
-          (JE.string node.label, "HorizontalGroup", 0, "!!!")
+          ( JE.string node.label, "HorizontalGroup"
+          --, 0, "!!!"
+          )
         Switch sid ->
-          (JE.string sid, "Switch", 0, "!!!")
+          ( JE.string sid, "Switch"
+          --, 0, "!!!"
+          )
 
     -- devowel = replace All (regex "[aeiou]") (\_ -> "")
-    sprintf = RX.replace RX.All (RX.regex "({}|%s)") (\_ -> strValue)
+
+{------------------------------------------------
+    insertNodeValue sFmt nId nVal =
+      RX.replace RX.All ( RX.regex ("{{" ++ kid.id ++ "}}") ) (\_ -> kid.) sFmt
+    sprintf sFmt param =
+      RX.replace RX.All (RX.regex "({{}}|%s)") (\_ -> param) sFmt
+    kl = join "|" ( List.map (\ kid -> "{{" ++ kid.id ++ "}}") (kids node) )
+    sprintfX sFmt param =
+      RX.replace RX.All (RX.regex "({{}}|%s)") (\_ -> param) sFmt
     cmdlet =
       case node.cmdr of
         BoolCmdr cmdTrue cmdFalse ->
@@ -139,13 +177,15 @@ jsonValue node =
           else if boolState == 2 then cmdFalse
           else ""
         StringCmdr cmdFmt ->
-          sprintf cmdFmt
-        _ ->
-          "not implemented yet"
+          sprintf cmdFmt strValue
+        KidsFmtCmdr sFmt ->
+          "!!! EMPTY !!!"
+        EmptyCmdr ->
+          "!!! EMPTY !!!"
+------------------------------------------------}
 
 
-
-
+    cmdlet = cmdOf node
 
     kids_l = kids node
     extra =
@@ -163,6 +203,49 @@ jsonValue node =
     -- , ( "cmdFmt", JE.string node.cmdFmt )
     -- , ( "active", JE.bool node.isActive )
     ] ++ extra )
+
+
+cmdOf : Node -> String
+cmdOf node =
+  let
+    sprintf1 str param =
+      RX.replace RX.All (RX.regex "({{}}|%s)") (\_ -> param) str
+
+    sprintf str sFmt param =
+      RX.replace RX.All (RX.regex sFmt) (\_ -> param) str
+
+    insertNodeValue str kid =
+      -- RX.replace RX.All (RX.regex ("{{" ++ kid.id ++ "}}")) (\_ -> (cmdOf kid)) str
+      sprintf str  ( "{{" ++ kid.id ++ "}}" )  ( cmdOf kid )
+
+    
+
+--    kl = join "|" ( List.map (\ kid -> "{{" ++ kid.id ++ "}}") (kids node) )
+--    sprintfX sFmt param =
+--      RX.replace RX.All (RX.regex "({{}}|%s)") (\_ -> param) sFmt
+  in
+      case node.cmdr of
+        BoolCmdr cmdTrue cmdFalse ->
+          case node.value of
+            BoolValue b ->
+              if b then cmdTrue
+              else cmdFalse
+            _ ->
+              "!!! NEITHER TRUE NOR FALSE : " ++ (toString node.value)
+
+        StringCmdr cmdFmt ->
+          case node.value of
+            StringValue strValue ->
+              sprintf1 cmdFmt strValue
+            _ ->
+              "!!! NOT A STRING : " ++ (toString node.value)
+
+        KidsFmtCmdr sFmt lSep ->
+          sprintf1 sFmt (join lSep (List.map (\ kid -> cmdOf kid) (kids node)))
+          -- "!!! NOT IMPLEMENTED YET : " ++ (toString node.cmdr)
+
+        EmptyCmdr ->
+          "!!! EMPTY : " ++ (toString node.cmdr)
 
 
 get : Id -> List Node -> Node

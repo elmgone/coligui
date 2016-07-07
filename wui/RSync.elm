@@ -16,6 +16,7 @@ module RSync exposing (Model, Msg, init, update, view)
 
 import Widget as W exposing (
     aRoot, aVertical, aHorizontal, aSwitch, aBool, aString
+  , gKidsFmt
   )
 
 import Html exposing (..)
@@ -64,15 +65,17 @@ type alias Model =
 init : (Model, Cmd Msg)
 init =
   let
+{------------------------------------------------------------
     folder id = W.aString (id ++ "-F") "Folder" "%s"
     host   id = W.aString (id ++ "-H") "Host"   "%s"
     user   id = W.aString (id ++ "-U") "User"   "%s@"
     nwport id = W.aString (id ++ "-P") "Port"   ":%s"
 
     localFolder id =
-      aVertical (id ++ "-L") "Local" "" [
+      --aVertical (id ++ "-L") "Local" "" [
+      aVertical (id ++ "-L") "Local" [
         folder (id ++ "-L")
-      ]
+      ] (gKidsFmt ("vg({{" ++ id ++ "-L" ++ "}})"))
 
     remoteShell id =
       let
@@ -107,8 +110,15 @@ init =
 
     locations =
       aHorizontal "loc" "Location" "" [ srcLocation, tgtLocation ]
+------------------------------------------------------------}
 
     verbose = aBool "verbose" "Verbose" False "--verbose" "--quiet"
+    name    = aString "name" "Your Name" "herName='{{}}'"
+
+    person =
+      aVertical "ps" "Person" [name, verbose] (gKidsFmt ("person({{}})") ", ")
+
+    --( root, nodes ) = aRoot "RSync" "rsync %s" [ verbose, name ]
 
   {-----------------------------------------------------
     werbose = aBool "w" "Werbose" False
@@ -124,9 +134,10 @@ init =
     ( root, nodes ) = aRoot "RSync" [switch1]
   -----------------------------------------------------}
 
-    ( root, nodes ) = aRoot "RSync" "rsync %s" [ verbose, locations ]
+    --( root, nodes ) = aRoot "RSync" "rsync %s" [ verbose, locations ]
+    --( root, nodes ) = aRoot "RSync" "rsync %s" [ verbose, name ]
   in
-    ( Model "" "" root
+    ( Model "" "" person  -- root
     , Cmd.none )
 
 
