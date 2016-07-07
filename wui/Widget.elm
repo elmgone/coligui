@@ -15,7 +15,7 @@
 module Widget exposing (
     Node, Msg
   , aRoot, aVertical, aHorizontal, aSwitch, aBool, aString
-  --, Commander
+  --, Formatter
   , fmtKidsList, fmtKidsById
 
   , update
@@ -44,7 +44,7 @@ type alias Node =
   , value    : Value
   --, cmdFmt   : String
   , kids     : Kids
-  , cmdr     : Commander
+  , fmtr     : Formatter
   --, isActive : Bool
   }
 
@@ -62,48 +62,48 @@ type Value
   | Switch Id
   --| Tabs Id
 
-type Commander
-  = BoolCmdr String String
-    -- BoolCmdr cTrue cFalse
+type Formatter
+  = BoolFmtr String String
+    -- BoolFmtr cTrue cFalse
     -- cmdlet = if isTrue then cTrue else cFalse
-  | StringCmdr String
-    -- StringCmdr sFmt
+  | StringFmtr String
+    -- StringFmtr sFmt
     -- cmdlet = sprintf sFmt ( cmdOf kid )
-  | KidsListCmdr String String
-    -- KidsListCmdr sFmt sSep
+  | KidsListFmtr String String
+    -- KidsListFmtr sFmt sSep
     -- cmdlet = sprintf sFmt ( join ( ListOf ( cmdOf kid ) ) sSep )
     -- order of kids is unchanged / unchangable
-  | KidsByIdCmdr String String
-    -- KidsByIdCmdr sFmt sSep
+  | KidsByIdFmtr String String
+    -- KidsByIdFmtr sFmt sSep
     -- cmdlet = sprintf sFmt ( join ( ListOf ( cmdOf kid ) SortedById ) sSep )
     -- order of kids is sorted by their Ids
-  | SelectedKidCmdr  -- Id
-  --| EmptyCmdr
+  | SelectedKidFmtr  -- Id
+  --| EmptyFmtr
 
 
-fmtKidsList : String -> String -> Commander
+fmtKidsList : String -> String -> Formatter
 fmtKidsList cmdFmt listSep =
-  KidsListCmdr cmdFmt listSep
+  KidsListFmtr cmdFmt listSep
 
-fmtKidsById : String -> String -> Commander
+fmtKidsById : String -> String -> Formatter
 fmtKidsById cmdFmt listSep =
-  KidsByIdCmdr cmdFmt listSep
+  KidsByIdFmtr cmdFmt listSep
 
-aRoot : String -> List Node -> Commander -> ( Node, List Node )
-aRoot label kidsList cmdr =
+aRoot : String -> List Node -> Formatter -> ( Node, List Node )
+aRoot label kidsList fmtr =
   let
-    rootNode = Node "root" label RootCmd (KidsList kidsList) cmdr
+    rootNode = Node "root" label RootCmd (KidsList kidsList) fmtr
     grandKids = flatKidsList rootNode
   in
     ( rootNode, rootNode :: grandKids )
 
-aVertical : String -> String -> List Node -> Commander -> Node
-aVertical id label kidsList cmdr =
-  Node (id ++ "-VG") label VerGroup (KidsList kidsList) cmdr
+aVertical : String -> String -> List Node -> Formatter -> Node
+aVertical id label kidsList fmtr =
+  Node (id ++ "-VG") label VerGroup (KidsList kidsList) fmtr
 
-aHorizontal : String -> String -> List Node -> Commander -> Node
-aHorizontal id label kidsList cmdr =
-  Node (id ++ "-HG") label HorGroup (KidsList kidsList) cmdr
+aHorizontal : String -> String -> List Node -> Formatter -> Node
+aHorizontal id label kidsList fmtr =
+  Node (id ++ "-HG") label HorGroup (KidsList kidsList) fmtr
 
 aSwitch : String -> String -> List Node -> Node
 aSwitch id label kidsList =
@@ -114,15 +114,15 @@ aSwitch id label kidsList =
         Nothing  -> ""
         Just kid -> kid.id
   in
-    Node (id ++ "-SW") label (Switch fkid) (KidsList kidsList) SelectedKidCmdr   -- EmptyCmdr
+    Node (id ++ "-SW") label (Switch fkid) (KidsList kidsList) SelectedKidFmtr   -- EmptyFmtr
 
 aBool : Id -> String -> Bool -> String -> String -> Node
 aBool id label flag cmdTrue cmdFalse =
-  Node (id ++ "_B") label (BoolValue flag) (KidsList []) (BoolCmdr cmdTrue cmdFalse)
+  Node (id ++ "_B") label (BoolValue flag) (KidsList []) (BoolFmtr cmdTrue cmdFalse)
 
 aString : Id -> String -> String -> Node
 aString id label cmdFmt =
-  Node (id ++ "_S") label (StringValue "") (KidsList []) (StringCmdr cmdFmt)
+  Node (id ++ "_S") label (StringValue "") (KidsList []) (StringFmtr cmdFmt)
 
 kids : Node -> List Node
 kids node =
@@ -211,7 +211,7 @@ cmdOf node =
     cmdListOfKids : Node -> List String
     cmdListOfKids node =
       List.map (\ kid -> cmdOf kid) (kids node)
-    
+
     cmdsOfKids : String -> Node -> String
     cmdsOfKids listSep node =
       join listSep ( cmdListOfKids node )
@@ -219,11 +219,11 @@ cmdOf node =
     kidsCmdletsByIdList : Node -> List (Id, String)
     kidsCmdletsByIdList node =
       List.map (\ k -> (k.id, cmdOf k)) (kids node)
-    
+
     kidsCmdletsByIdDict : Node -> Dict.Dict Id String
     kidsCmdletsByIdDict node =
       Debug.log "kids Cmdlets By Id Dict" ( Dict.fromList ( kidsCmdletsByIdList node ) )
-    
+
     kidsCmdletsListByIds : Node -> List String
     kidsCmdletsListByIds node =
       snd ( List.unzip ( Dict.toList ( kidsCmdletsByIdDict node ) ) )
@@ -236,8 +236,8 @@ cmdOf node =
           ""
 
     resultCmdlet =
-      case node.cmdr of
-        BoolCmdr cmdTrue cmdFalse ->
+      case node.fmtr of
+        BoolFmtr cmdTrue cmdFalse ->
           case node.value of
             BoolValue b ->
               if b then cmdTrue
@@ -246,7 +246,7 @@ cmdOf node =
               "!!! NEITHER TRUE NOR FALSE : " ++ (toString node.value)
               --Debug.crash ("!!! NEITHER TRUE NOR FALSE : " ++ (toString node.value))
 
-        StringCmdr cmdFmt ->
+        StringFmtr cmdFmt ->
           case node.value of
             StringValue strValue ->
               sprintf1 cmdFmt strValue
@@ -254,15 +254,15 @@ cmdOf node =
               "!!! NOT A STRING : " ++ (toString node.value)
               --Debug.crash ("!!! NOT A STRING : " ++ (toString node.value))
 
-        KidsListCmdr sFmt listSep ->
+        KidsListFmtr sFmt listSep ->
           sprintf1 sFmt ( cmdsOfKids listSep node )
 
-        KidsByIdCmdr sFmt listSep ->
+        KidsByIdFmtr sFmt listSep ->
           -- cmdlet = sprintf sFmt ( join ( ListOf ( cmdOf kid ) SortedById ) sSep )
           -- order of kids is sorted by their Ids
           sprintf1 sFmt ( join listSep ( kidsCmdletsListByIds node ) )
-        
-        SelectedKidCmdr ->
+
+        SelectedKidFmtr ->
           case (getSelectedKid (selectedId node) node) of
             Just kid ->
               cmdOf kid
@@ -270,9 +270,9 @@ cmdOf node =
               "!!! NOTHING SELECTED : " ++ (toString node.value)
 
 {-------------------------------------------
-        EmptyCmdr ->
-          --Debug.crash ("!!! EMPTY : " ++ (toString node.cmdr))
-          "!!! EMPTY : " ++ (toString node.cmdr)
+        EmptyFmtr ->
+          --Debug.crash ("!!! EMPTY : " ++ (toString node.fmtr))
+          "!!! EMPTY : " ++ (toString node.fmtr)
 -------------------------------------------}
 
   in
@@ -283,7 +283,7 @@ getSelectedKid : Id -> Node -> Maybe Node
 getSelectedKid sid node =
   -- optSelectedKid = List.head ( List.filter (\ kid -> kid.id == sid ) kids_l )
   List.head ( List.filter (\ kid -> kid.id == sid ) (kids node) )
-        
+
 
 
 get : Id -> List Node -> Node
