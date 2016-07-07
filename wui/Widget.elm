@@ -88,10 +88,13 @@ gKidsById : String -> String -> Commander
 gKidsById cmdFmt listSep =
   KidsByIdCmdr cmdFmt listSep
 
-aRoot : String -> String -> List Node -> ( Node, List Node )
-aRoot label cmdFmt kidsList =
+--aRoot : String -> String -> List Node -> ( Node, List Node )
+--aRoot label cmdFmt kidsList =
+aRoot : String -> List Node -> Commander -> ( Node, List Node )
+aRoot label kidsList cmdr =
   let
-    rootNode = Node "root" label RootCmd (KidsList kidsList) (StringCmdr cmdFmt)
+    --rootNode = Node "root" label RootCmd (KidsList kidsList) (StringCmdr cmdFmt)
+    rootNode = Node "root" label RootCmd (KidsList kidsList) cmdr
     grandKids = flatKidsList rootNode
   in
     ( rootNode, rootNode :: grandKids )
@@ -103,9 +106,12 @@ aVertical id label kidsList cmdr =
 --  Node (id ++ "-VG") label VerGroup (KidsList kidsList) (KidsFmtCmdr cmdFmt)  -- (StringCmdr cmdFmt)
   Node (id ++ "-VG") label VerGroup (KidsList kidsList) cmdr  -- (StringCmdr cmdFmt)
 
-aHorizontal : String -> String -> String -> List Node -> Node
-aHorizontal id label cmdFmt kidsList =
-  Node (id ++ "-HG") label HorGroup (KidsList kidsList) (StringCmdr cmdFmt)
+--aHorizontal : String -> String -> String -> List Node -> Node
+--aHorizontal id label cmdFmt kidsList =
+  --Node (id ++ "-HG") label HorGroup (KidsList kidsList) (StringCmdr cmdFmt)
+aHorizontal : String -> String -> List Node -> Commander -> Node
+aHorizontal id label kidsList cmdr =
+  Node (id ++ "-HG") label HorGroup (KidsList kidsList) cmdr
 
 aSwitch : String -> String -> List Node -> Node
 aSwitch id label kidsList =
@@ -243,6 +249,7 @@ cmdOf node =
               else cmdFalse
             _ ->
               "!!! NEITHER TRUE NOR FALSE : " ++ (toString node.value)
+              --Debug.crash ("!!! NEITHER TRUE NOR FALSE : " ++ (toString node.value))
 
         StringCmdr cmdFmt ->
           case node.value of
@@ -250,6 +257,7 @@ cmdOf node =
               sprintf1 cmdFmt strValue
             _ ->
               "!!! NOT A STRING : " ++ (toString node.value)
+              --Debug.crash ("!!! NOT A STRING : " ++ (toString node.value))
 
         KidsFmtCmdr sFmt listSep ->
           -- sprintf1 sFmt (join lSep (List.map (\ kid -> cmdOf kid) (kids node)))
@@ -261,6 +269,7 @@ cmdOf node =
           sprintf1 sFmt ( join listSep ( kidsCmdletsListByIds node ) )
 
         EmptyCmdr ->
+          --Debug.crash ("!!! EMPTY : " ++ (toString node.cmdr))
           "!!! EMPTY : " ++ (toString node.cmdr)
 
 

@@ -119,11 +119,12 @@ init =
 
     -- gKidsSeq, gKidsById
     fperson =
-      aVertical "ps" "Person" [fullname "Her", verbose "Her"] (gKidsSeq ("seq({{}})") ", ")
+      aHorizontal "2fps" "Person" [fullname "Her", verbose "Her"] (gKidsSeq ("SHE:seq({{}})") ", ")
     mperson =
-      aVertical "ps" "Person" [fullname "His", verbose "his"] (gKidsById ("byId({{}})") ", ")
+      aVertical "1mps" "Person" [fullname "His", verbose "his"] (gKidsById ("HE:byId({{}})") ", ")
 
-    ( root, nodes ) = aRoot "RSync" "rsync {{}}" [ fperson, mperson ]
+    --( root, nodes ) = aRoot "RSync" "rsync {{}}" [ fperson, mperson ]
+    ( root, nodes ) = aRoot "RSync" [ fperson, mperson ] (gKidsById ("rsync {{}} # by id") " && ")
 
   {-----------------------------------------------------
     werbose = aBool "w" "Werbose" False
