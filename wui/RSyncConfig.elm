@@ -51,7 +51,7 @@ init =
     tgtLocationSwitch = locationSwitch "tgt" "Target"
 
     locationSwitches =
-      aHorizontal "loc" "Location" [
+      aHorizontal "dataLoc" "Data" [
         srcLocationSwitch
       , tgtLocationSwitch
       ] (fmtList "{{}}" " ")
@@ -60,15 +60,15 @@ init =
       locationSwitches
     ] (fmtList "rsync {{}} # ..." " ")
     
-    verbose   = aBool "v" "Verbose"   False "--verbose"   ""     -- increase verbosity
-    quiet     = aBool "q" "Quiet"     False "--quiet"     ""     -- suppress non-error messages
-    checksum  = aBool "c" "Checksum"  False "--checksum"  ""     -- skip based on checksum, not mod-time & size
-    archive   = aBool "a" "Archive"   False "--archive"   ""     -- archive mode; equals -rlptgoD (no -H,-A,-X)
+    verbose   = aBool "v" "Verbose"   "increase verbosity"                           False "--verbose"
+    quiet     = aBool "q" "Quiet"     "suppress non-error messages"                  False "--quiet"
+    checksum  = aBool "c" "Checksum"  "skip based on checksum, not mod-time & size"  False "--checksum"
+    archive   = aBool "a" "Archive"   "archive mode; equals -rlptgoD (no -H,-A,-X)"  False "--archive"
     
-    recursive = aBool "r" "Recursive" False "--recursive" ""     -- recurse into directories
-    relative  = aBool "R" "Relative"  False "--relative"  ""     -- use relative path names
-    backup    = aBool "b" "Backup"    False "--backup"    ""     -- make backups (see --suffix & --backup-dir)
-    update    = aBool "u" "Update"    False "--update"    ""     -- skip files that are newer on the receiver
+    recursive = aBool "r" "Recursive" "recurse into directories"                     False "--recursive"
+    relative  = aBool "R" "Relative"  "use relative path names"                      False "--relative"
+    backup    = aBool "b" "Backup"    "make backups (see --suffix & --backup-dir)"   False "--backup"
+    update    = aBool "u" "Update"    "skip files that are newer on the receiver"    False "--update"
 
     options1 =
       aVertical "flags1" "Options 1" [
@@ -265,17 +265,18 @@ init =
 
 
 
-folder id prefix =
-  aString (id ++ "-F") "Folder" (prefix ++ "{{}}")
+folder : W.Id -> String -> String -> W.Node
+folder id descr prefix =
+  aString (id ++ "-F") "Folder" descr (prefix ++ "{{}}")
 
-host id =
-  aString (id ++ "-H") "Host"   "{{}}"
+host id descr =
+  aString (id ++ "-H") "Host" descr "{{}}"
 
-user id =
-  aString (id ++ "-U") "User"   "{{}}@"
+user id descr =
+  aString (id ++ "-U") "User" descr "{{}}@"
 
-nwport id =
-  aString (id ++ "-P") "Port"   ":{{}}"
+nwport id descr =
+  aString (id ++ "-P") "Port" descr ":{{}}"
 
 localFolder id =
   let
@@ -283,7 +284,7 @@ localFolder id =
     idFmt = "{{" ++ lfId ++ "}}"
   in
     aVertical lfId "Local" [
-      folder lfId ""
+      folder lfId "a directory in the local file system" ""
     ] (fmtList "'{{}}'" "")
 
 remoteShell id =
@@ -291,9 +292,9 @@ remoteShell id =
     rsid = id ++ "-RS"
   in
     aVertical rsid "Remote Shell" [
-      user    rsid
-    , host    rsid
-    , folder  rsid ":"
+      user    rsid "a user name on the remote host"
+    , host    rsid "a remote host name or IP address"
+    , folder  rsid "a directory on the remote host" ":"
     ] (fmtList "'{{}}'" "")
 
 remoteDaemon id =
@@ -301,10 +302,10 @@ remoteDaemon id =
     did = id ++ "-RD"
   in
     aVertical did "Remote Daemon" [
-      user    did
-    , host    did
-    , nwport  did
-    , folder  did "::"
+      user    did "a user name on the remote host"
+    , host    did "a remote host name or IP address"
+    , nwport  did "a port number on the remote host"
+    , folder  did "a directory on the remote host" "::"
     ] (fmtList "'{{}}'" "")
 
 locationSwitch id name =

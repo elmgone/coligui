@@ -13,8 +13,8 @@
 -- limitations under the License.
 
 module Widget exposing (
-    Node, Msg
-  , aRoot, aVertical, aHorizontal, aSwitch, aBool, aString
+    Node, Msg, Id
+  , aRoot, aVertical, aHorizontal, aSwitch, aBool, aBoolX, aString
   --, Formatter
   , fmtList, fmtById   -- , fmtBool
 
@@ -41,11 +41,10 @@ import Dict   -- as Di  --  exposing (..)
 type alias Node =
   { id       : Id
   , label    : String
+  , descr    : String
   , value    : Value
-  --, cmdFmt   : String
   , kids     : Kids
   , fmtr     : Formatter
-  --, isActive : Bool
   }
 
 type alias Id = String
@@ -101,7 +100,7 @@ fmtById cmdFmt listSep =
 aRoot : String -> List Node -> Formatter -> ( Node, List Node )
 aRoot label kidsList fmtr =
   let
-    rootNode = Node "root" label RootCmd (KidsList kidsList) fmtr
+    rootNode = Node "root" label "root node of the command" RootCmd (KidsList kidsList) fmtr
     grandKids = flatKidsList rootNode
   in
     ( rootNode, rootNode :: grandKids )
@@ -110,13 +109,13 @@ aVertical : String -> String -> List Node -> Formatter -> Node
 aVertical id label kidsList fmtr =
   --Node (id ++ "-VG") label VerGroup (KidsList kidsList) fmtr
 --  Node (id ++ "-VG") label (Group True False) (KidsList kidsList) fmtr
-  Node (id ++ "-VG") label (Group True) (KidsList kidsList) fmtr
+  Node (id ++ "-VG") label "a vertical grouping" (Group True) (KidsList kidsList) fmtr
 
 aHorizontal : String -> String -> List Node -> Formatter -> Node
 aHorizontal id label kidsList fmtr =
   --Node (id ++ "-HG") label HorGroup (KidsList kidsList) fmtr
 --  Node (id ++ "-HG") label (Group False False) (KidsList kidsList) fmtr
-  Node (id ++ "-HG") label (Group False) (KidsList kidsList) fmtr
+  Node (id ++ "-HG") label "a horizontal grouping"(Group False) (KidsList kidsList) fmtr
 
 aSwitch : String -> String -> List Node -> Node
 aSwitch id label kidsList =
@@ -127,21 +126,26 @@ aSwitch id label kidsList =
         Nothing  -> ""
         Just kid -> kid.id
   in
-    Node (id ++ "-SW") label (Switch fkid) (KidsList kidsList) SelectedKidFmtr
+    Node (id ++ "-SW") label "a switch" (Switch fkid) (KidsList kidsList) SelectedKidFmtr
 
-aBool : Id -> String -> Bool -> String -> String -> Node
-aBool id label flag cmdTrue cmdFalse =
-  Node (id ++ "_B") label (BoolValue flag) (KidsList []) (BoolFmtr cmdTrue cmdFalse)
---aBool : Id -> String -> Bool -> Formatter -> Node
---aBool id label flag fmtr =
---  Node (id ++ "_B") label (BoolValue flag) (KidsList []) fmtr  -- (BoolFmtr cmdTrue cmdFalse)
+--aBool : Id -> String -> Bool -> String -> String -> Node
+--aBool id label flag cmdTrue cmdFalse =
+--  Node (id ++ "_B") label (BoolValue flag) (KidsList []) (BoolFmtr cmdTrue cmdFalse)
 
-aString : Id -> String -> String -> Node
-aString id label cmdFmt =
+aBool : Id -> String -> String -> Bool -> String -> Node
+aBool id label descr flag cmdTrue =
+  Node (id ++ "_B") label descr (BoolValue flag) (KidsList []) (BoolFmtr cmdTrue "")
+
+aBoolX : Id -> String -> String -> Bool -> String -> String -> Node
+aBoolX id label descr flag cmdTrue cmdFalse =
+  Node (id ++ "_BX") label descr (BoolValue flag) (KidsList []) (BoolFmtr cmdTrue cmdFalse)
+
+aString : Id -> String -> String -> String -> Node
+aString id label descr cmdFmt =
   let
     strValue = StringValue (validateFormatForParam cmdFmt)
   in
-    Node (id ++ "_S") label strValue (KidsList []) (StringFmtr cmdFmt)
+    Node (id ++ "_S") label descr strValue (KidsList []) (StringFmtr cmdFmt)
 
 validateFormatForParam : String -> String
 validateFormatForParam cmdFmt =
@@ -394,63 +398,35 @@ view node =
         h2 [] [ a [ href "http://localhost:33333" ] [ text node.label ] ]
       ] ++ ( List.map view ( kids node ) ) )
 
-{-----------------------------------------------------------------      
-        tr [] [ td []
-          [ h2 []
-            [ a [ href "http://localhost:33333" ] [ text node.label ]
-            ]
-          , table []
-            ( List.map view ( kids node ) )
-          ] ]
------------------------------------------------------------------}
-
-    --Group isVertical showGroupLabel ->
     Group isVertical ->
       let
-        showLabel = True
+        showLabelXX = True
       in
         table [ title (toString node.value) ] (
           if isVertical then
             let
               -- one row
-              row (lbl, cont) =
-                -- tr [] [ td [] [lbl], td [] [cont] ]
-                tr [] [ mkLabel showLabel lbl, td [] [cont] ]
+              ---row (lbl, cont) =
+              row (cont, nd, showLabel) =
+                ---tr [] [ mkLabel showLabel lbl, td [] [cont] ]
+                tr [] [ mkLabel showLabel nd, td [] [cont] ]
               -- many rows
               rows node =
                 List.map row (kidsListOfTuples node)
             in
-              -- table of many rows
-              --table [] ( 
                 rows node
-              --)
 
           else
             -- horizontal
             let
               (labels, conts) = kidsTupleOfLists node
             in
-              -- table []
-              [
-                -- tr [] ( List.map (\ label -> td [] [label] ) labels )
-                tr [] ( List.map (\ label -> mkLabel showLabel label ) labels )
+              --[ tr [] ( List.map (\ label -> mkLabel showLabel label ) labels )
+              [ tr [] ( labels )
               , tr [] ( List.map (\ cont  -> td [] [cont] )  conts )
               ]
         )
 
-{----------------------------------------------------------
-      if isVertical then
-        tr [] [ td [] [
-          table [ title (node.label ++ " " ++ node.id) ]
-            ( List.map view ( kids node ) )
-        ] ]
-      else
-        let
-          kidsAsTR_l = List.map view ( kids node )
-          kidsAsTDs_l = List.map (\ kidAsTR -> td [] [ table [] [ kidAsTR ] ]) kidsAsTR_l
-        in
-          tr [ title (node.label ++ " " ++ node.id) ] kidsAsTDs_l
-----------------------------------------------------------}
 
     Switch sid ->
       {-------------------------------------------}
@@ -481,41 +457,56 @@ view node =
               view kid
       in
         tr [ title (node.label ++ " " ++ node.id) ] [
-          td [] [ table [] switchBoard ]  -- kidsAsRadios_l ]
+          td [] [ table [] switchBoard ]
         , td [] [ table [] [ selectedKidTR ] ]
         ]
       -------------------------------------------}
 
 
-mkLabel : Bool -> String -> Html Msg
-mkLabel showLabel lblStr =
-  if showLabel && lblStr /= "" then
-    td [] [ text lblStr ]
+--mkLabel : Bool -> String -> Html Msg
+--mkLabel showLabel lblStr =
+--  if showLabel && lblStr /= "" then
+--    td [] [ text lblStr ]
+--  else
+--    td [ title lblStr ] []
+
+mkLabel : Bool -> Node -> Html Msg
+mkLabel showLabel node =
+--  if showLabel && lblStr /= "" then
+  if showLabel then
+    td [ title node.descr ] [ text node.label ]
   else
-    td [ title lblStr ] []
+    td [ title ( node.label ++ ": " ++ node.descr ) ] []
 
 
---kidsListOfTuples : Node -> List (Html Msg, Html Msg)
-kidsListOfTuples : Node -> List (String, Html Msg)
+--kidsListOfTuples : Node -> List (String, Html Msg)
+--kidsListOfTuples : Node -> List (Node, Html Msg)
+kidsListOfTuples : Node -> List (Html Msg, Node, Bool)
 kidsListOfTuples node =
   List.map viewTuple ( kids node )
 
---kidsTupleOfLists : Node -> (List (Html Msg), List (Html Msg))
-kidsTupleOfLists : Node -> (List String, List (Html Msg))
+--kidsTupleOfLists : Node -> (List String, List (Html Msg))
+kidsTupleOfLists : Node -> (List (Html Msg), List (Html Msg))
 kidsTupleOfLists node =
-  List.unzip (kidsListOfTuples node)
+  --List.unzip (kidsListOfTuples node)
+  let
+    triple2htmlTuple (cont, kid, showLabel) =
+      ( mkLabel showLabel kid, cont )
+    tuples = List.map triple2htmlTuple (kidsListOfTuples node)
+  in
+    List.unzip (tuples)
 
 
 {-----------------------------------------------}
 node2Table : Node -> Html Msg
 node2Table node =
   let
-    (lbl, cont) = viewTuple node
+    --(lbl, cont) = viewTuple node
+    (cont, nd, showLabel) = viewTuple node
     nTable node =
       table [ title (node.label ++ " " ++ node.id) ] [
-        --tr [] ( List.map (\x -> td [] [x]) (viewList node) )
-        --tr [] [ td [] [lbl], td [] [cont] ]
-        tr [] [ mkLabel True lbl, td [] [cont] ]
+        -- tr [] [ mkLabel True lbl, td [] [cont] ]
+        tr [] [ mkLabel showLabel node, td [] [cont] ]
       ]
   in
     case node.value of
@@ -532,48 +523,51 @@ node2Table node =
 
 
 {-----------------------------------------------}
---viewList : Node -> List (Html Msg)
---viewList node =
-
---viewTuple : Node -> (Html Msg, Html Msg)
-viewTuple : Node -> (String, Html Msg)
+--viewTuple : Node -> (String, Html Msg)
+viewTuple : Node -> (Html Msg, Node, Bool)
 viewTuple node =
   let
-    --- content : ( Html Msg
-    (content, label) =
+    (content, showLabel) =
       case node.value of
         BoolValue flag ->
           ( input [ type' "checkbox", checked flag, onCheck (editBool node.id) ] []
-          , node.label
+          --, node.label
+          , True
           )
         StringValue str ->
           ( input [ type' "text", value str, onInput (editString node.id) ] []
-          , node.label
+          --, node.label
+          , True
           )
         RootCmd ->
           -- notImplemented node "viewList RootCmd"
           ( view node
-          , node.label
+          --, node.label
+          , True
           )
 
         --Group isVertical showLabel ->
         Group isVertical ->
           ( view node
           --, if showLabel then node.label else ""
-          , node.label 
+          --, node.label
+          , True
           )
 
         Switch sid ->
           -- input [ type' "radio", checked False
           -- ] []
           ( view node
-          , ""  --  node.label
+          --, ""  --  node.label
+          --, node.label
+          , False
           )
   in
     --( label [] [ text node.label ]
-    ( label   -- node.label
-    , content
-    )
+    --( label   -- node.label
+    --, content
+    --)
+    ( content, node, showLabel )
 -----------------------------------------------}
 
 editBool id b =
