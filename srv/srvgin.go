@@ -24,37 +24,38 @@ type (
 	//  , kids     : Kids
 	//  , isActive : Bool
 	Node struct {
-		Id       string
-		Type     string
-		Label    string
-		Value    interface{}
-		CmdLet   string
-		Kids     []*Node
-		IsActive *bool `json:"active"`
+		Id     string
+		Type   string
+		Label  string
+		Value  interface{}
+		CmdLet string
+		Kids   []*Node
+		//		IsActive *bool `json:"active"`
 	}
 
-	nodesById_M   map[string]*Node
-	cmdletsById_M map[string]string
+	nodesById_M map[string]*Node
+
+//	cmdletsById_M map[string]string
 )
 
-//func (node *Node) ProcessTree( //--nodesById_m nodesById_M,
-////	activate bool,
-////) (nodesById_M, cmdletsById_M) {
-//) string {
-//	nodesById_m := make(nodesById_M)
-//	cmdletsById_m := make(cmdletsById_M)
+func (node *Node) ProcessTree( //--nodesById_m nodesById_M,
+//	activate bool,
+//) (nodesById_M, cmdletsById_M) {
+) /*string*/ {
+	nodesById_m := make(nodesById_M)
+	//	cmdletsById_m := make(cmdletsById_M)
 
-//	cnf := func(n *Node) {
-//		n.CheckNode(nodesById_m)
-//		//		n.ProcessNode(cmdletsById_m)
-//	}
+	cnf := func(n *Node) {
+		n.CheckNode(nodesById_m)
+		//		n.ProcessNode(cmdletsById_m)
+	}
 
-//	node.WalkTree(true, //--activate,
-//		cnf)
+	node.WalkTree( //--true, //--activate,
+		cnf)
 
-//	//	return nodesById_m, cmdletsById_m
-//	return cmdletsById_m[node.Id]
-//}
+	//	return nodesById_m, cmdletsById_m
+	//	return cmdletsById_m[node.Id]
+}
 
 func (node *Node) CheckNode(nodesById_m nodesById_M) { //--}, activate bool) {
 	_, ok := nodesById_m[node.Id]
@@ -160,24 +161,26 @@ func (node *Node) CheckNode(nodesById_m nodesById_M) { //--}, activate bool) {
 //	return cmdlet
 //}
 
-////func (node *Node) WalkTree(nodesById_m nodesById_M, activate bool) {
-//func (node *Node) WalkTree(activate bool, cnf func(*Node)) {
-//	//	node.IsActive = activate
-//	//	cnf(node)
+//func (node *Node) WalkTree(nodesById_m nodesById_M, activate bool) {
+func (node *Node) WalkTree( //--activate bool,
+	cnf func(*Node)) {
+	//	node.IsActive = activate
+	//	cnf(node)
 
-//	for _, kid := range node.Kids {
-//		kidActive := activate
-//		if activate && node.Type == "Switch" {
-//			sId := node.Value.(string)
-//			kidActive = (kid.Id == sId)
-//		}
+	for _, kid := range node.Kids {
+		//		kidActive := activate
+		//		if activate && node.Type == "Switch" {
+		//			sId := node.Value.(string)
+		//			kidActive = (kid.Id == sId)
+		//		}
 
-//		kid.WalkTree(kidActive, cnf)
-//	}
+		//		kid.WalkTree(kidActive, cnf)
+		kid.WalkTree(cnf)
+	}
 
-//	node.IsActive = activate
-//	cnf(node)
-//}
+	//	node.IsActive = activate
+	cnf(node)
+}
 
 func ServeGin(port int) error {
 	router := gin.Default()
@@ -212,8 +215,11 @@ func ServeGin(port int) error {
 			c.AbortWithError(http.StatusBadRequest, err)
 			return
 		}
-		//		cmdRes := node.ProcessTree()
+		//		cmdRes :=
+		node.ProcessTree()
 		//		fmt.Printf("got '%s': '''%s''' from %#v\n", cmd_s, cmdRes, node)
+		fmt.Printf("got '%s': %#v\n", cmd_s, node)
+
 		cmdRes := node.CmdLet
 		fmt.Printf("got '%s': '''%s''' from %#v\n", cmd_s, cmdRes, node)
 
