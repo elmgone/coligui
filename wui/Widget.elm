@@ -22,7 +22,7 @@ module Widget exposing (
   , view
   , treeToJson, nodeToJson  --, toJson
 
-  , nodeAsHtmlLI
+  , nodeAsHtmlLI, cmdOf
   )
 
 

@@ -16,7 +16,6 @@ module RSync exposing (Model, Msg, init, update, view)
 
 import Widget as W exposing (
     aRoot, aVertical, aHorizontal, aSwitch, aBool, aString
-  --, gKidsFmt
   , fmtList   --, fmtById
   )
 
@@ -45,6 +44,7 @@ main =
 type alias Model =
   { id        : String
   , output    : String
+  , debug     : Bool
 
   -- widgets
   , root      : W.Node
@@ -68,113 +68,11 @@ type alias Model =
 init : (Model, Cmd Msg)
 init =
   let
-{------------------------------------------------------------
-    folder id prefix = aString (id ++ "-F") "Folder" (prefix ++ "{{}}")
-    host   id = aString (id ++ "-H") "Host"   "{{}}"
-    user   id = aString (id ++ "-U") "User"   "{{}}@"
-    nwport id = aString (id ++ "-P") "Port"   ":{{}}"
-
-    localFolder id =
-      let
-        lfId = id ++ "-L"
-        idFmt = "{{" ++ lfId ++ "}}"
-      in
-        aVertical lfId "Local" [
-          folder lfId ""
-        ] (fmtList "'{{}}'" "")
-
-    remoteShell id =
-      let
-        rsid = id ++ "-RS"
-      in
-        aVertical rsid "Remote Shell" [
-          user    rsid
-        , host    rsid
-        , folder  rsid ":"
-        ] (fmtList "'{{}}'" "")
-
-    remoteDaemon id =
-      let
-        did = id ++ "-RD"
-      in
-        aVertical did "Remote Daemon" [
-          user    did
-        , host    did
-        , nwport  did
-        , folder  did "::"
-        ] (fmtList "'{{}}'" "")
-
-    locationSwitch id name =
-      aSwitch id name [
-        localFolder  id
-      , remoteShell  id
-      , remoteDaemon id
-      ]
-
-    srcLocationSwitch = locationSwitch "src" "Source"
-    tgtLocationSwitch = locationSwitch "tgt" "Target"
-
-    locationSwitches =
-      aHorizontal "loc" "Location" [
-        srcLocationSwitch
-      , tgtLocationSwitch
-      ] (fmtList "{{}}" " ")
-
-------------------------------------------------------------}
-
-  {-----------------------------------------------------
-    verbose whose = aBool ("1verbose" ++ whose) "Verbose" False "--verbose" "--quiet"
-    -- name whose = aString ("2name" ++ whose) (whose ++ " Name") (whose ++ "Name='{{}}'")
-    fullname whose = aString ("2name" ++ whose) (whose ++ " Name") (whose ++ "Name='{{}}'")
-
-    -- fmtList, fmtById
-    fperson =
-      aHorizontal "2fps" "Woman" [
-        fullname "Her"
-      , verbose "Her"
-      , folder "4her"
-      ] (fmtList ("SHE:seq({{}})") ", ")
-    
-    mperson =
-      aVertical "1mps" "Man" [
-        fullname "His"
-      , verbose "2his"
-      , host    "3his"
-      , localFolder "4lf"
-      ] (fmtList ("HE:byId({{}})") ", ")
-
-    --( root, nodes ) = aRoot "RSync" "rsync {{}}" [ fperson, mperson ]
-    --( root, nodes ) = aRoot "RSync" [ fperson, mperson ] (fmtById ("rsync {{}} # by id") " && ")
-    root = aSwitch "alt1" "Alternative" [ fperson, mperson ]   -- (fmtById ("rsync {{}} # by id") " && ")
-  -----------------------------------------------------}
-
-  {-----------------------------------------------------
-    werbose = aBool "w" "Werbose" False "--werbose" "--quiet"
-    srcF    = aString "srcF" "Source Folder"
-    verG1   = aVertical "verG1" [ werbose, srcF ]
-
-    recursive = aBool "r" "Recursive" False
-    tgtF    = aString "tgtF" "Target Folder"
-    horG1   = aHorizontal "horG1" [ recursive, tgtF ]
-
-    switch1   = aSwitch "switch1" [verG1, horG1]
-
-    ( root, nodes ) = aRoot "RSync" [switch1]
-  -----------------------------------------------------}
-
-    --( root, nodes ) = aRoot "RSync" "rsync %s" [ verbose, locations ]
-    
-    --werbose = aBool "w" "Werbose" False "--werbose" "--quiet"
-    --werbose = aBool "v" "Verbose" False (W.fmtBool "--verbose" "--quiet")
     ( root, nodes ) = aRoot "RSync" [
-      --werbose
-    --, locationSwitches
       RSyncConfig.init
     ] (fmtList "rsync {{}} # ..." " ")
-    
-    --( root, nodes ) = aRoot "RSync" "rsync %s" [ verbose, name ]
   in
-    ( Model "" "" root
+    ( Model "" "" False root
     , Cmd.none )
 
 
@@ -185,21 +83,13 @@ type Msg =
     | Save
     | SaveSucceed SaveResult
     | SaveFail Http.Error
-
-
---    Save
---  | CreateSucceed Model
---  | CreateFail Http.Error
-
-
+    | ToggleDebug Bool
 
 update : Msg -> Model -> (Model, Cmd Msg)
 update msg model =
     case msg of
       CallWidget wMsg ->
         let
-          --updateNode = W.update wMsg
-          --( newRoot, cmd ) = W.mapUpdate updateNode model.root
           ( newRoot, cmd ) = W.update wMsg model.root
         in
           ( { model | root = newRoot }
@@ -209,7 +99,6 @@ update msg model =
 {--------------------------------------}
       Save ->
         let
-          --data = JE.encode 2 ( W.jsonValue model.root )
           data = W.treeToJson 2 model.root
         in
             ( { model | output = data }
@@ -226,6 +115,9 @@ update msg model =
             ( { model | output = toString err }
             , Cmd.none
             )
+      
+      ToggleDebug dbg ->
+            ( { model | debug = dbg }, Cmd.none )
 
 
 
@@ -244,7 +136,6 @@ saveJob : W.Node -> Cmd Msg
 saveJob node =
   let
     url = "/job/RSync"
-    --body_s = JE.encode 2 (W.jsonValue node)
     body_s = W.treeToJson 2 node
     postCall = Http.post decodeSaved url (Http.string body_s)
   in
@@ -257,57 +148,42 @@ saveJob node =
 view : Model -> Html Msg
 view model =
   let
+    wTreeLI w =
+      if model.debug then
+        --ul [] [ Html.App.map CallWidget (W.nodeAsHtmlLI w) ]
+        Html.App.map CallWidget (W.nodeAsHtmlLI w)
+      else
+        div [] []
     dbg =
       div [] [
         h4 [] [ text "debug" ]
-      , ul [] [ W.nodeAsHtmlLI model.root ]
+      {-----------------
+      , div [] [
+          label [] [ text "extensive" ]
+        , input [ type' "checkbox", onCheck ToggleDebug ] []
+        ]
+      -----------------}
+      --, ul [] [ Html.App.map CallWidget (W.nodeAsHtmlLI model.root) ]
+      , ul [] ( [
+          li [] [ text (W.cmdOf model.root) ]
+        , li [] [
+            label [] [ text "extensive" ]
+          , input [ type' "checkbox", onCheck ToggleDebug ] []
+          ]
+        ] ++ [ wTreeLI model.root ] )
+      --, wTree model.root
       ]
       
   in
-    -- table [] [
     div [] [
-      --Html.App.map CallWidget (W.viewTR ".." model.root)
       Html.App.map CallWidget (W.view model.root)
-    , -- tr [] [ td [] [
-        button [ onClick Save ] [ text "Save" ]
-      , h3 [] [ text "Output" ]
-      , text model.output
-      --, h4 [] [ text "debug" ]
-      --, text ( W.toJson 2 model.root )
-      --, text ("root = " ++ dbg)
-      , Html.App.map CallWidget dbg
-      --] ]
-
-  {----------------------------------------- }
-  , ul [] [
-      li [] [ text (JE.encode 2 ( W.jsonValue model.root )) ]
-    ]
-  -----------------------------------------}
-
+    , button [ onClick Save ] [ text "Save" ]
+    , h3 [] [ text "Output" ]
+    , text model.output
+    --, Html.App.map CallWidget dbg
+    , dbg
     ]
 
-
-{----------------------------------------- }
-      if model.visible then
-        visibleView model
-      else
-        invisibleView model
-
-visibleView : Model -> Html Msg
-visibleView model =
-  let
-    verbHM =
-  in
-    div [] [
-      label [] [ text model.label ]
-    , input [ type' "checkbox", checked model.isTrue, onCheck Set ] []
-  --, text (toString model.isTrue)
-    ]
-
-invisibleView : Model -> Html Msg
-invisibleView model =
-  div [] []
----------------------------------------------}
 
 -- SUBSCRIPTIONS
 
