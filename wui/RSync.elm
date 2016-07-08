@@ -12,10 +12,14 @@
 -- See the License for the specific language governing permissions and
 -- limitations under the License.
 
-module RSync exposing (Model, Msg, init, update, view)
+module RSync exposing (  --Model, Msg, 
+  init  --, update, view
+  )
 
 import Widget as W exposing (
-    aRoot, aVertical, aHorizontal, aSwitch, aBool, aString
+    -- aRoot
+    aSection
+  , aVertical, aHorizontal, aSwitch, aBool, aString
   --, gKidsFmt
   , fmtList   --, fmtById
   )
@@ -29,6 +33,7 @@ import Task
 import Json.Decode as JD exposing ((:=))
 import Json.Encode as JE
 
+{----------------------------------------------------
 main =
   Html.App.program {
     init = init,
@@ -47,6 +52,7 @@ type alias Model =
   -- widgets
   , root      : W.Node
   }
+----------------------------------------------------}
 
 
 --   Local:  rsync [OPTION...] SRC... [DEST]
@@ -63,7 +69,7 @@ type alias Model =
 --
 --   Usages with just one SRC arg and no DEST arg will list the source files instead of copying.
 
-init : (Model, Cmd Msg)
+---init : (Model, Cmd Msg)
 init =
   let
 {------------------------------------------------------------}
@@ -162,19 +168,23 @@ init =
 
     --( root, nodes ) = aRoot "RSync" "rsync %s" [ verbose, locations ]
     
-    werbose = aBool "w" "Werbose" False "--werbose" "--quiet"
+    --werbose = aBool "w" "Werbose" False "--werbose" "--quiet"
     --werbose = aBool "v" "Verbose" False (W.fmtBool "--verbose" "--quiet")
-    ( root, nodes ) = aRoot "RSync" [
-      werbose
-    , locationSwitches
+    -- ( root, nodes ) = aRoot "RSync" [
+    --( root, nodes ) = aSection 2 "RSync" [
+      --werbose
+    root = aSection 2 "RSync" [
+      locationSwitches
     ] (fmtList "rsync {{}} # ..." " ")
     
     --( root, nodes ) = aRoot "RSync" "rsync %s" [ verbose, name ]
   in
-    ( Model "" "" root
-    , Cmd.none )
+    ---( Model "" "" 
+    root
+    --, Cmd.none )
 
 
+{--------------------------------------------------------
 -- UPDATE
 
 type Msg =
@@ -203,7 +213,6 @@ update msg model =
           , Cmd.map CallWidget cmd
           )
 
-{--------------------------------------}
       Save ->
         let
           --data = JE.encode 2 ( W.jsonValue model.root )
@@ -212,7 +221,6 @@ update msg model =
             ( { model | output = data }
             , saveJob model.root
             )
---------------------------------------}
 
       SaveSucceed sRes ->  -- String
             ( { model | output = toString sRes }
@@ -312,3 +320,4 @@ subscriptions : Model -> Sub Msg
 subscriptions model =
   Sub.none
 
+--------------------------------------------------------}

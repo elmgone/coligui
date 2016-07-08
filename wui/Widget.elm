@@ -14,7 +14,9 @@
 
 module Widget exposing (
     Node, Msg
-  , aRoot, aVertical, aHorizontal, aSwitch, aBool, aString
+  --, aRoot
+  , aSection
+  , aVertical, aHorizontal, aSwitch, aBool, aString
   --, Formatter
   , fmtList, fmtById   -- , fmtBool
 
@@ -56,7 +58,8 @@ type Kids
 type Value
   = BoolValue Bool
   | StringValue String
-  | RootCmd
+  --| RootCmd
+  | Section Int
   --| Group Bool Bool
   | Group Bool
     -- Group isVertical showLabel -- default True False
@@ -98,13 +101,19 @@ fmtById cmdFmt listSep =
 --  BoolFmtr cmdTrue cmdFalse
 
 
-aRoot : String -> List Node -> Formatter -> ( Node, List Node )
-aRoot label kidsList fmtr =
+--aRoot : String -> List Node -> Formatter -> ( Node, List Node )
+--aRoot label kidsList fmtr =
+--aSection : Int -> String -> List Node -> Formatter -> ( Node, List Node )
+--aSection level label kidsList fmtr =
+aSection : Int -> String -> List Node -> Formatter -> Node
+aSection level label kidsList fmtr =
   let
-    rootNode = Node "root" label RootCmd (KidsList kidsList) fmtr
-    grandKids = flatKidsList rootNode
+    -- rootNode = Node "root" label RootCmd (KidsList kidsList) fmtr
+    rootNode = Node "root" label (Section level) (KidsList kidsList) fmtr
+    --grandKids = flatKidsList rootNode
   in
-    ( rootNode, rootNode :: grandKids )
+    --( rootNode, rootNode :: grandKids )
+    rootNode
 
 aVertical : String -> String -> List Node -> Formatter -> Node
 aVertical id label kidsList fmtr =
@@ -178,8 +187,10 @@ jsonValueRec recurse node =
           ( JE.bool b, "Bool" )
         StringValue s ->
           ( JE.string s, "String" )
-        RootCmd ->
-          ( JE.string node.label, "Root" )
+        -- RootCmd ->
+          --( JE.string node.label, "Root" )
+        Section i ->
+          ( JE.string node.label, toString node.value )
         --Group isVertical showLabel ->
         Group isVertical ->
           ( JE.string node.label
@@ -389,10 +400,19 @@ view node =
       -- node2TR node
       node2Table node
 
-    RootCmd ->
-      div [] ( [
-        h2 [] [ a [ href "http://localhost:33333" ] [ text node.label ] ]
-      ] ++ ( List.map view ( kids node ) ) )
+    --RootCmd ->
+    Section i ->
+      let
+        h i hl =
+          if i <= 1 then
+            h2 [] hl
+          else
+            h3 [] hl
+      in
+        div [] ( [
+          --- h2 [] [ a [ href "http://localhost:33333" ] [ text node.label ] ]
+          h i [ text node.label ]
+        ] ++ ( List.map view ( kids node ) ) )
 
 {-----------------------------------------------------------------      
         tr [] [ td []
@@ -550,8 +570,9 @@ viewTuple node =
           ( input [ type' "text", value str, onInput (editString node.id) ] []
           , node.label
           )
-        RootCmd ->
+        --RootCmd ->
           -- notImplemented node "viewList RootCmd"
+        Section i ->
           ( view node
           , node.label
           )

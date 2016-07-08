@@ -19,7 +19,7 @@ else
 fi
 
 cd wui &&
-	elm make RSync.elm &&
+	elm make CoLiGui.elm &&
 	firefox index.html &&
 	cd .. &&
 	$BLD
