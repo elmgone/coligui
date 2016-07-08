@@ -136,20 +136,9 @@ aBool id label flag cmdTrue cmdFalse =
 aString : Id -> String -> String -> Node
 aString id label cmdFmt =
   let
-  {---------------------
-    initialValue =
-      if contains cmdFmt "{{}}" then
-        ""
-      else
-        "!! format MUST contain '{{}}' !!"
-  ---------------------}
     strValue = StringValue (validateFormatForParam cmdFmt)
   in
-    --Node (id ++ "_S") label (StringValue initialValue) (KidsList []) (StringFmtr cmdFmt)
     Node (id ++ "_S") label strValue (KidsList []) (StringFmtr cmdFmt)
---aString : Id -> String -> Formatter -> Node
---aString id label fmtr =
---  Node (id ++ "_S") label (StringValue "") (KidsList []) (StringFmtr cmdFmt)
 
 validateFormatForParam : String -> String
 validateFormatForParam cmdFmt =
@@ -385,14 +374,18 @@ mapUpdate f node =
 
 -- VIEW
 
-viewTR : Id -> Node -> Html Msg
-viewTR parentId node =
+--viewTR : Id -> Node -> Html Msg
+--viewTR parentId node =
+viewTR : Node -> Html Msg
+viewTR node =
   case node.value of
     BoolValue _ ->
-      node2TR parentId node
+      --node2TR parentId node
+      node2TR node
 
     StringValue _ ->
-      node2TR parentId node
+      --node2TR parentId node
+      node2TR node
 
     RootCmd ->
         tr [] [ td []
@@ -400,7 +393,8 @@ viewTR parentId node =
             [ a [ href "http://localhost:33333" ] [ text node.label ]
             ]
           , table []
-            ( List.map (viewTR node.id) ( kids node ) )
+            --( List.map (viewTR node.id) ( kids node ) )
+            ( List.map viewTR ( kids node ) )
           ] ]
 
     --VerGroup ->
@@ -408,13 +402,15 @@ viewTR parentId node =
       if isVertical then
         tr [] [ td [] [
           table [ title (node.label ++ " " ++ node.id) ]
-            ( List.map (viewTR node.id) ( kids node ) )
+            --( List.map (viewTR node.id) ( kids node ) )
+            ( List.map viewTR ( kids node ) )
         ] ]
       else
 
 --    HorGroup ->
         let
-          kidsAsTR_l = List.map (viewTR node.id) ( kids node )
+          --kidsAsTR_l = List.map (viewTR node.id) ( kids node )
+          kidsAsTR_l = List.map viewTR ( kids node )
           kidsAsTDs_l = List.map (\ kidAsTR -> td [] [ table [] [ kidAsTR ] ]) kidsAsTR_l
         in
           tr [ title (node.label ++ " " ++ node.id) ] kidsAsTDs_l
@@ -448,7 +444,8 @@ viewTR parentId node =
                   ++ node.label ++ ")")
               ] ]
             Just kid ->
-              viewTR  node.id kid
+              --viewTR  node.id kid
+              viewTR kid
       in
         tr [ title (node.label ++ " " ++ node.id) ] [
           td [] [ table [] switchBoard ]  -- kidsAsRadios_l ]
@@ -457,17 +454,22 @@ viewTR parentId node =
       -------------------------------------------}
 
 
-node2TR : Id -> Node -> Html Msg
-node2TR parentId node =
+--node2TR : Id -> Node -> Html Msg
+--node2TR parentId node =
+node2TR : Node -> Html Msg
+node2TR node =
   let
-    tds_l = List.map (\x -> td [] [x]) (viewList parentId node)
+    --tds_l = List.map (\x -> td [] [x]) (viewList parentId node)
+    tds_l = List.map (\x -> td [] [x]) (viewList node)
   in
     tr [ title (node.label ++ " " ++ node.id) ] tds_l
 
 
 {-----------------------------------------------}
-viewList : Id -> Node -> List (Html Msg)
-viewList parentId node =
+--viewList : Id -> Node -> List (Html Msg)
+--viewList parentId node =
+viewList : Node -> List (Html Msg)
+viewList node =
   let
     inputElement =
       case node.value of
