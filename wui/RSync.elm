@@ -20,6 +20,8 @@ import Widget as W exposing (
   , fmtList   --, fmtById
   )
 
+import RSyncConfig exposing (..)
+
 import Html exposing (..)
 import Html.App
 import Html.Events exposing (..)
@@ -66,7 +68,7 @@ type alias Model =
 init : (Model, Cmd Msg)
 init =
   let
-{------------------------------------------------------------}
+{------------------------------------------------------------
     folder id prefix = aString (id ++ "-F") "Folder" (prefix ++ "{{}}")
     host   id = aString (id ++ "-H") "Host"   "{{}}"
     user   id = aString (id ++ "-U") "User"   "{{}}@"
@@ -162,11 +164,12 @@ init =
 
     --( root, nodes ) = aRoot "RSync" "rsync %s" [ verbose, locations ]
     
-    werbose = aBool "w" "Werbose" False "--werbose" "--quiet"
+    --werbose = aBool "w" "Werbose" False "--werbose" "--quiet"
     --werbose = aBool "v" "Verbose" False (W.fmtBool "--verbose" "--quiet")
     ( root, nodes ) = aRoot "RSync" [
-      werbose
-    , locationSwitches
+      --werbose
+    --, locationSwitches
+      RSyncConfig.init
     ] (fmtList "rsync {{}} # ..." " ")
     
     --( root, nodes ) = aRoot "RSync" "rsync %s" [ verbose, name ]

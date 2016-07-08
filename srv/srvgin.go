@@ -9,6 +9,7 @@ import (
 	"log"
 	"net/http"
 	//	"strings"
+	"errors"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -41,28 +42,37 @@ type (
 func (node *Node) ProcessTree( //--nodesById_m nodesById_M,
 //	activate bool,
 //) (nodesById_M, cmdletsById_M) {
-) /*string*/ {
+//) /*string*/ {
+) error {
 	nodesById_m := make(nodesById_M)
 	//	cmdletsById_m := make(cmdletsById_M)
 
-	cnf := func(n *Node) {
-		n.CheckNode(nodesById_m)
-		//		n.ProcessNode(cmdletsById_m)
+	cnf := func(n *Node) error {
+		return n.CheckNode(nodesById_m)
+		//		err:=n.CheckNode(nodesById_m)
+		//		//		n.ProcessNode(cmdletsById_m)
+		//		if err != nil {
+		//			return err
+		//		}
 	}
 
-	node.WalkTree( //--true, //--activate,
+	return node.WalkTree( //--true, //--activate,
 		cnf)
 
 	//	return nodesById_m, cmdletsById_m
 	//	return cmdletsById_m[node.Id]
 }
 
-func (node *Node) CheckNode(nodesById_m nodesById_M) { //--}, activate bool) {
-	_, ok := nodesById_m[node.Id]
+func (node *Node) CheckNode(nodesById_m nodesById_M) error { //--}, activate bool) {
+	altNode, ok := nodesById_m[node.Id]
 	if ok {
-		panic("Duplicate ID")
+		//		panic("Duplicate ID")
+		errMsg := fmt.Sprintf("Duplicate ID '%s':  %+v  <->  %+v",
+			node.Id, altNode, node)
+		return errors.New(errMsg)
 	}
 	nodesById_m[node.Id] = node
+	return nil
 }
 
 //func (node *Node) ProcessNode(cmdletsById_m cmdletsById_M) string {
@@ -163,7 +173,7 @@ func (node *Node) CheckNode(nodesById_m nodesById_M) { //--}, activate bool) {
 
 //func (node *Node) WalkTree(nodesById_m nodesById_M, activate bool) {
 func (node *Node) WalkTree( //--activate bool,
-	cnf func(*Node)) {
+	cnf func(*Node) error) error {
 	//	node.IsActive = activate
 	//	cnf(node)
 
@@ -175,11 +185,14 @@ func (node *Node) WalkTree( //--activate bool,
 		//		}
 
 		//		kid.WalkTree(kidActive, cnf)
-		kid.WalkTree(cnf)
+		err := kid.WalkTree(cnf)
+		if err != nil {
+			return err
+		}
 	}
 
 	//	node.IsActive = activate
-	cnf(node)
+	return cnf(node)
 }
 
 func ServeGin(port int) error {
@@ -216,9 +229,13 @@ func ServeGin(port int) error {
 			return
 		}
 		//		cmdRes :=
-		node.ProcessTree()
+		err = node.ProcessTree()
 		//		fmt.Printf("got '%s': '''%s''' from %#v\n", cmd_s, cmdRes, node)
-		fmt.Printf("got '%s': %#v\n", cmd_s, node)
+		fmt.Printf("got '%s': %#v: %s\n", cmd_s, node, err)
+		if err != nil {
+			c.AbortWithError(http.StatusBadRequest, err)
+			return
+		}
 
 		cmdRes := node.CmdLet
 		fmt.Printf("got '%s': '''%s''' from %#v\n", cmd_s, cmdRes, node)
