@@ -57,8 +57,9 @@ type Value
   = BoolValue Bool
   | StringValue String
   | RootCmd
+  --| Group Bool Bool
   | Group Bool
-    -- Group isVertical -- default True
+    -- Group isVertical showLabel -- default True False
     -- a horizontal or vertical group, the flag says if it's vertical: default is vertical
   --| VerGroup
   --| HorGroup
@@ -108,11 +109,13 @@ aRoot label kidsList fmtr =
 aVertical : String -> String -> List Node -> Formatter -> Node
 aVertical id label kidsList fmtr =
   --Node (id ++ "-VG") label VerGroup (KidsList kidsList) fmtr
+--  Node (id ++ "-VG") label (Group True False) (KidsList kidsList) fmtr
   Node (id ++ "-VG") label (Group True) (KidsList kidsList) fmtr
 
 aHorizontal : String -> String -> List Node -> Formatter -> Node
 aHorizontal id label kidsList fmtr =
   --Node (id ++ "-HG") label HorGroup (KidsList kidsList) fmtr
+--  Node (id ++ "-HG") label (Group False False) (KidsList kidsList) fmtr
   Node (id ++ "-HG") label (Group False) (KidsList kidsList) fmtr
 
 aSwitch : String -> String -> List Node -> Node
@@ -177,6 +180,7 @@ jsonValueRec recurse node =
           ( JE.string s, "String" )
         RootCmd ->
           ( JE.string node.label, "Root" )
+        --Group isVertical showLabel ->
         Group isVertical ->
           ( JE.string node.label
           , if isVertical then
@@ -386,6 +390,11 @@ view node =
       node2Table node
 
     RootCmd ->
+      div [] ( [
+        h2 [] [ a [ href "http://localhost:33333" ] [ text node.label ] ]
+      ] ++ ( List.map view ( kids node ) ) )
+
+{-----------------------------------------------------------------      
         tr [] [ td []
           [ h2 []
             [ a [ href "http://localhost:33333" ] [ text node.label ]
@@ -393,8 +402,43 @@ view node =
           , table []
             ( List.map view ( kids node ) )
           ] ]
+-----------------------------------------------------------------}
 
-    Group isVertical->
+    --Group isVertical showGroupLabel ->
+    Group isVertical ->
+      let
+        showLabel = True
+      in
+        table [ title (toString node.value) ] (
+          if isVertical then
+            let
+              -- one row
+              row (lbl, cont) =
+                -- tr [] [ td [] [lbl], td [] [cont] ]
+                tr [] [ mkLabel showLabel lbl, td [] [cont] ]
+              -- many rows
+              rows node =
+                List.map row (kidsListOfTuples node)
+            in
+              -- table of many rows
+              --table [] ( 
+                rows node
+              --)
+
+          else
+            -- horizontal
+            let
+              (labels, conts) = kidsTupleOfLists node
+            in
+              -- table []
+              [
+                -- tr [] ( List.map (\ label -> td [] [label] ) labels )
+                tr [] ( List.map (\ label -> mkLabel showLabel label ) labels )
+              , tr [] ( List.map (\ cont  -> td [] [cont] )  conts )
+              ]
+        )
+
+{----------------------------------------------------------
       if isVertical then
         tr [] [ td [] [
           table [ title (node.label ++ " " ++ node.id) ]
@@ -406,6 +450,7 @@ view node =
           kidsAsTDs_l = List.map (\ kidAsTR -> td [] [ table [] [ kidAsTR ] ]) kidsAsTR_l
         in
           tr [ title (node.label ++ " " ++ node.id) ] kidsAsTDs_l
+----------------------------------------------------------}
 
     Switch sid ->
       {-------------------------------------------}
@@ -442,13 +487,35 @@ view node =
       -------------------------------------------}
 
 
+mkLabel : Bool -> String -> Html Msg
+mkLabel showLabel lblStr =
+  if showLabel && lblStr /= "" then
+    td [] [ text lblStr ]
+  else
+    td [ title lblStr ] []
+
+
+--kidsListOfTuples : Node -> List (Html Msg, Html Msg)
+kidsListOfTuples : Node -> List (String, Html Msg)
+kidsListOfTuples node =
+  List.map viewTuple ( kids node )
+
+--kidsTupleOfLists : Node -> (List (Html Msg), List (Html Msg))
+kidsTupleOfLists : Node -> (List String, List (Html Msg))
+kidsTupleOfLists node =
+  List.unzip (kidsListOfTuples node)
+
+
 {-----------------------------------------------}
 node2Table : Node -> Html Msg
 node2Table node =
   let
+    (lbl, cont) = viewTuple node
     nTable node =
       table [ title (node.label ++ " " ++ node.id) ] [
-        tr [] ( List.map (\x -> td [] [x]) (viewList node) )
+        --tr [] ( List.map (\x -> td [] [x]) (viewList node) )
+        --tr [] [ td [] [lbl], td [] [cont] ]
+        tr [] [ mkLabel True lbl, td [] [cont] ]
       ]
   in
     case node.value of
@@ -462,43 +529,51 @@ node2Table node =
 -----------------------------------------------}
 
 
-{-----------------------------------------------
-node2TR : Node -> Html Msg
-node2TR node =
-  let
-    tds_l = List.map (\x -> td [] [x]) (viewList node)
-  in
-    tr [ title (node.label ++ " " ++ node.id) ] tds_l
------------------------------------------------}
 
 
 {-----------------------------------------------}
-viewList : Node -> List (Html Msg)
-viewList node =
+--viewList : Node -> List (Html Msg)
+--viewList node =
+
+--viewTuple : Node -> (Html Msg, Html Msg)
+viewTuple : Node -> (String, Html Msg)
+viewTuple node =
   let
-    content : Html Msg
-    content =
+    --- content : ( Html Msg
+    (content, label) =
       case node.value of
         BoolValue flag ->
-          input [ type' "checkbox", checked flag, onCheck (editBool node.id) ] []
+          ( input [ type' "checkbox", checked flag, onCheck (editBool node.id) ] []
+          , node.label
+          )
         StringValue str ->
-          input [ type' "text", value str, onInput (editString node.id) ] []
+          ( input [ type' "text", value str, onInput (editString node.id) ] []
+          , node.label
+          )
         RootCmd ->
           -- notImplemented node "viewList RootCmd"
-          view node
+          ( view node
+          , node.label
+          )
 
+        --Group isVertical showLabel ->
         Group isVertical ->
-          -- notImplemented node ("viewList " ++ (toString node.value))
-          view node
+          ( view node
+          --, if showLabel then node.label else ""
+          , node.label 
+          )
 
         Switch sid ->
           -- input [ type' "radio", checked False
           -- ] []
-          view node
+          ( view node
+          , ""  --  node.label
+          )
   in
-    [ label [] [ text node.label ]
+    --( label [] [ text node.label ]
+    ( label   -- node.label
     , content
-    ]
+    )
 -----------------------------------------------}
 
 editBool id b =

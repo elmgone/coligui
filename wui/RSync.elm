@@ -102,18 +102,22 @@ init =
         , folder  did "::"
         ] (fmtList "'{{}}'" "")
 
-    location id name =
+    locationSwitch id name =
       aSwitch id name [
         localFolder  id
       , remoteShell  id
       , remoteDaemon id
       ]
 
-    srcLocation = location "src" "Source"
-    tgtLocation = location "tgt" "Target"
+    srcLocationSwitch = locationSwitch "src" "Source"
+    tgtLocationSwitch = locationSwitch "tgt" "Target"
 
-    locations =
-      aHorizontal "loc" "Location" [ srcLocation, tgtLocation ] (fmtList "{{}}" " ")
+    locationSwitches =
+      aHorizontal "loc" "Location" [
+        srcLocationSwitch
+      , tgtLocationSwitch
+      ] (fmtList "{{}}" " ")
+
 ------------------------------------------------------------}
 
   {-----------------------------------------------------
@@ -160,7 +164,11 @@ init =
     
     werbose = aBool "w" "Werbose" False "--werbose" "--quiet"
     --werbose = aBool "v" "Verbose" False (W.fmtBool "--verbose" "--quiet")
-    ( root, nodes ) = aRoot "RSync" [ werbose, locations ] (fmtList "rsync {{}} # ..." " ")
+    ( root, nodes ) = aRoot "RSync" [
+      werbose
+    , locationSwitches
+    ] (fmtList "rsync {{}} # ..." " ")
+    
     --( root, nodes ) = aRoot "RSync" "rsync %s" [ verbose, name ]
   in
     ( Model "" "" root
@@ -253,10 +261,11 @@ view model =
       ]
       
   in
-    table [] [
+    -- table [] [
+    div [] [
       --Html.App.map CallWidget (W.viewTR ".." model.root)
       Html.App.map CallWidget (W.view model.root)
-    , tr [] [ td [] [
+    , -- tr [] [ td [] [
         button [ onClick Save ] [ text "Save" ]
       , h3 [] [ text "Output" ]
       , text model.output
@@ -264,7 +273,7 @@ view model =
       --, text ( W.toJson 2 model.root )
       --, text ("root = " ++ dbg)
       , Html.App.map CallWidget dbg
-      ] ]
+      --] ]
 
   {----------------------------------------- }
   , ul [] [
