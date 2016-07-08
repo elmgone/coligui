@@ -16,7 +16,7 @@ module Widget exposing (
     Node, Msg
   , aRoot, aVertical, aHorizontal, aSwitch, aBool, aString
   --, Formatter
-  , fmtKidsList, fmtKidsById
+  , fmtList, fmtById, fmtBool
 
   , update
   , viewTR
@@ -81,13 +81,18 @@ type Formatter
   --| EmptyFmtr
 
 
-fmtKidsList : String -> String -> Formatter
-fmtKidsList cmdFmt listSep =
+fmtList : String -> String -> Formatter
+fmtList cmdFmt listSep =
   KidsListFmtr cmdFmt listSep
 
-fmtKidsById : String -> String -> Formatter
-fmtKidsById cmdFmt listSep =
+fmtById : String -> String -> Formatter
+fmtById cmdFmt listSep =
   KidsByIdFmtr cmdFmt listSep
+
+fmtBool : String -> String -> Formatter
+fmtBool cmdTrue cmdFalse =
+  BoolFmtr cmdTrue cmdFalse
+
 
 aRoot : String -> List Node -> Formatter -> ( Node, List Node )
 aRoot label kidsList fmtr =
@@ -114,15 +119,40 @@ aSwitch id label kidsList =
         Nothing  -> ""
         Just kid -> kid.id
   in
-    Node (id ++ "-SW") label (Switch fkid) (KidsList kidsList) SelectedKidFmtr   -- EmptyFmtr
+    Node (id ++ "-SW") label (Switch fkid) (KidsList kidsList) SelectedKidFmtr
 
 aBool : Id -> String -> Bool -> String -> String -> Node
 aBool id label flag cmdTrue cmdFalse =
   Node (id ++ "_B") label (BoolValue flag) (KidsList []) (BoolFmtr cmdTrue cmdFalse)
+--aBool : Id -> String -> Bool -> Formatter -> Node
+--aBool id label flag fmtr =
+--  Node (id ++ "_B") label (BoolValue flag) (KidsList []) fmtr  -- (BoolFmtr cmdTrue cmdFalse)
 
 aString : Id -> String -> String -> Node
 aString id label cmdFmt =
-  Node (id ++ "_S") label (StringValue "") (KidsList []) (StringFmtr cmdFmt)
+  let
+  {---------------------
+    initialValue =
+      if contains cmdFmt "{{}}" then
+        ""
+      else
+        "!! format MUST contain '{{}}' !!"
+  ---------------------}
+    strValue = StringValue (validateFormatForParam cmdFmt)
+  in
+    --Node (id ++ "_S") label (StringValue initialValue) (KidsList []) (StringFmtr cmdFmt)
+    Node (id ++ "_S") label strValue (KidsList []) (StringFmtr cmdFmt)
+--aString : Id -> String -> Formatter -> Node
+--aString id label fmtr =
+--  Node (id ++ "_S") label (StringValue "") (KidsList []) (StringFmtr cmdFmt)
+
+validateFormatForParam : String -> String
+validateFormatForParam cmdFmt =
+      if contains cmdFmt "{{}}" then
+        ""
+      else
+        "!! format MUST contain '{{}}' !!"
+
 
 kids : Node -> List Node
 kids node =
@@ -298,6 +328,7 @@ get id nodes =
     case optNode of
       Nothing ->
         aBool id "!!NOT FOUND!!" False "!!NOT FOUND - TRUE!!" "!!NOT FOUND - FALSE!!"
+        --aBool id "!!NOT FOUND!!" False (BoolFmtr "!!NOT FOUND - TRUE!!" "!!NOT FOUND - FALSE!!")
       Just node ->
         node
 

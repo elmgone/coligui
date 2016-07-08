@@ -17,7 +17,7 @@ module RSync exposing (Model, Msg, init, update, view)
 import Widget as W exposing (
     aRoot, aVertical, aHorizontal, aSwitch, aBool, aString
   --, gKidsFmt
-  , fmtKidsList   --, fmtKidsById
+  , fmtList   --, fmtById
   )
 
 import Html exposing (..)
@@ -79,7 +79,7 @@ init =
       in
         aVertical lfId "Local" [
           folder lfId ""
-        ] (fmtKidsList "'{{}}'" "")
+        ] (fmtList "'{{}}'" "")
 
     remoteShell id =
       let
@@ -89,7 +89,7 @@ init =
           user    rsid
         , host    rsid
         , folder  rsid ":"
-        ] (fmtKidsList "'{{}}'" "")
+        ] (fmtList "'{{}}'" "")
 
     remoteDaemon id =
       let
@@ -100,7 +100,7 @@ init =
         , host    did
         , nwport  did
         , folder  did "::"
-        ] (fmtKidsList "'{{}}'" "")
+        ] (fmtList "'{{}}'" "")
 
     location id name =
       aSwitch id name [
@@ -113,7 +113,7 @@ init =
     tgtLocation = location "tgt" "Target"
 
     locations =
-      aHorizontal "loc" "Location" [ srcLocation, tgtLocation ] (fmtKidsList "{{}}" " ")
+      aHorizontal "loc" "Location" [ srcLocation, tgtLocation ] (fmtList "{{}}" " ")
 ------------------------------------------------------------}
 
   {-----------------------------------------------------
@@ -121,13 +121,13 @@ init =
     -- name whose = aString ("2name" ++ whose) (whose ++ " Name") (whose ++ "Name='{{}}'")
     fullname whose = aString ("2name" ++ whose) (whose ++ " Name") (whose ++ "Name='{{}}'")
 
-    -- fmtKidsList, fmtKidsById
+    -- fmtList, fmtById
     fperson =
       aHorizontal "2fps" "Woman" [
         fullname "Her"
       , verbose "Her"
       , folder "4her"
-      ] (fmtKidsList ("SHE:seq({{}})") ", ")
+      ] (fmtList ("SHE:seq({{}})") ", ")
     
     mperson =
       aVertical "1mps" "Man" [
@@ -135,11 +135,11 @@ init =
       , verbose "2his"
       , host    "3his"
       , localFolder "4lf"
-      ] (fmtKidsList ("HE:byId({{}})") ", ")
+      ] (fmtList ("HE:byId({{}})") ", ")
 
     --( root, nodes ) = aRoot "RSync" "rsync {{}}" [ fperson, mperson ]
-    --( root, nodes ) = aRoot "RSync" [ fperson, mperson ] (fmtKidsById ("rsync {{}} # by id") " && ")
-    root = aSwitch "alt1" "Alternative" [ fperson, mperson ]   -- (fmtKidsById ("rsync {{}} # by id") " && ")
+    --( root, nodes ) = aRoot "RSync" [ fperson, mperson ] (fmtById ("rsync {{}} # by id") " && ")
+    root = aSwitch "alt1" "Alternative" [ fperson, mperson ]   -- (fmtById ("rsync {{}} # by id") " && ")
   -----------------------------------------------------}
 
   {-----------------------------------------------------
@@ -159,7 +159,8 @@ init =
     --( root, nodes ) = aRoot "RSync" "rsync %s" [ verbose, locations ]
     
     werbose = aBool "w" "Werbose" False "--werbose" "--quiet"
-    ( root, nodes ) = aRoot "RSync" [ werbose, locations ] (fmtKidsList "rsync {{}} # ..." " ")
+    --werbose = aBool "v" "Verbose" False (W.fmtBool "--verbose" "--quiet")
+    ( root, nodes ) = aRoot "RSync" [ werbose, locations ] (fmtList "rsync {{}} # ..." " ")
     --( root, nodes ) = aRoot "RSync" "rsync %s" [ verbose, name ]
   in
     ( Model "" "" root
