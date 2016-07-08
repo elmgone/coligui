@@ -216,11 +216,12 @@ jsonValueRec recurse node =
         []
   in
     JE.object ( [
-      ( "id", JE.string node.id )
-    , ( "label", JE.string node.label )
-    , ( "type", JE.string typ )
-    , ( "value", val )
-    , ( "cmdlet", JE.string cmdlet )
+      ( "id",          JE.string node.id )
+    , ( "label",       JE.string node.label )
+    , ( "description", JE.string node.descr )
+    , ( "type",        JE.string typ )
+    , ( "value",       val )
+    , ( "cmdlet",      JE.string cmdlet )
     -- , ( "cmdFmt", JE.string node.cmdFmt )
     -- , ( "active", JE.bool node.isActive )
     ] ++ extra )

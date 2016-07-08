@@ -8,6 +8,8 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
+	"os"
+	"path/filepath"
 	//	"strings"
 	"errors"
 	"time"
@@ -25,12 +27,13 @@ type (
 	//  , kids     : Kids
 	//  , isActive : Bool
 	Node struct {
-		Id     string
-		Type   string
-		Label  string
-		Value  interface{}
-		CmdLet string
-		Kids   []*Node
+		Id          string
+		Type        string
+		Label       string
+		Description string
+		Value       interface{}
+		CmdLet      string
+		Kids        []*Node
 		//		IsActive *bool `json:"active"`
 	}
 
@@ -195,7 +198,7 @@ func (node *Node) WalkTree( //--activate bool,
 	return cnf(node)
 }
 
-func ServeGin(port int) error {
+func ServeGin(port int, baseDir string) error {
 	router := gin.Default()
 
 	router.GET("/", func(c *gin.Context) {
@@ -231,7 +234,7 @@ func ServeGin(port int) error {
 		//		cmdRes :=
 		err = node.ProcessTree()
 		//		fmt.Printf("got '%s': '''%s''' from %#v\n", cmd_s, cmdRes, node)
-		fmt.Printf("got '%s': %#v: %s\n", cmd_s, node, err)
+		fmt.Printf("got '%s': %#v: %v\n", cmd_s, node, err)
 		if err != nil {
 			c.AbortWithError(http.StatusBadRequest, err)
 			return
@@ -253,8 +256,29 @@ func ServeGin(port int) error {
 			return
 		}
 
+		id_s := hex.EncodeToString(h.Sum(nil))
+
+		cmdDir := filepath.Join(baseDir, node.Label)
+		os.MkdirAll(cmdDir, 0777)
+		jobFName := filepath.Join(cmdDir, id_s)
+		fnames_l, err := filepath.Glob(jobFName + "*.json") // + "-latest.json")
+		if err != nil {
+			c.AbortWithError(http.StatusBadRequest, err)
+			return
+		}
+		if len(fnames_l) == 0 {
+			jobFName = jobFName + ".json"
+
+			node_ijb, err := json.MarshalIndent(node, "", "  ")
+			if err != nil {
+				c.AbortWithError(http.StatusBadRequest, err)
+				return
+			}
+
+		}
+
 		res := gin.H{
-			"id":  hex.EncodeToString(h.Sum(nil)),
+			"id":  id_s,   //--hex.EncodeToString(h.Sum(nil)),
 			"cmd": cmdRes, //--node.ProcessTree(), //--  "bla",
 		}
 		c.JSON(http.StatusCreated, res)
