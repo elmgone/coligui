@@ -19,7 +19,7 @@ module Widget exposing (
   , fmtList, fmtById   -- , fmtBool
 
   , update
-  , viewTR
+  , view
   , treeToJson, nodeToJson  --, toJson
 
   , nodeAsHtmlLI
@@ -374,18 +374,16 @@ mapUpdate f node =
 
 -- VIEW
 
---viewTR : Id -> Node -> Html Msg
---viewTR parentId node =
-viewTR : Node -> Html Msg
-viewTR node =
+view : Node -> Html Msg
+view node =
   case node.value of
     BoolValue _ ->
-      --node2TR parentId node
-      node2TR node
+      -- node2TR node
+      node2Table node
 
     StringValue _ ->
-      --node2TR parentId node
-      node2TR node
+      -- node2TR node
+      node2Table node
 
     RootCmd ->
         tr [] [ td []
@@ -393,24 +391,18 @@ viewTR node =
             [ a [ href "http://localhost:33333" ] [ text node.label ]
             ]
           , table []
-            --( List.map (viewTR node.id) ( kids node ) )
-            ( List.map viewTR ( kids node ) )
+            ( List.map view ( kids node ) )
           ] ]
 
-    --VerGroup ->
     Group isVertical->
       if isVertical then
         tr [] [ td [] [
           table [ title (node.label ++ " " ++ node.id) ]
-            --( List.map (viewTR node.id) ( kids node ) )
-            ( List.map viewTR ( kids node ) )
+            ( List.map view ( kids node ) )
         ] ]
       else
-
---    HorGroup ->
         let
-          --kidsAsTR_l = List.map (viewTR node.id) ( kids node )
-          kidsAsTR_l = List.map viewTR ( kids node )
+          kidsAsTR_l = List.map view ( kids node )
           kidsAsTDs_l = List.map (\ kidAsTR -> td [] [ table [] [ kidAsTR ] ]) kidsAsTR_l
         in
           tr [ title (node.label ++ " " ++ node.id) ] kidsAsTDs_l
@@ -433,10 +425,7 @@ viewTR node =
           text node.label
         ]] :: kidsAsRadioTRs_l
 
-        --optSelectedKid = List.head ( List.filter (\ kid -> kid.id == sid ) kids_l )
-        --optSelectedKid = getSelectedKid node
         selectedKidTR =
-          --case optSelectedKid of
           case (getSelectedKid sid node) of
             Nothing ->
               tr [ title "please select one switch option" ] [ td [] [
@@ -444,8 +433,7 @@ viewTR node =
                   ++ node.label ++ ")")
               ] ]
             Just kid ->
-              --viewTR  node.id kid
-              viewTR kid
+              view kid
       in
         tr [ title (node.label ++ " " ++ node.id) ] [
           td [] [ table [] switchBoard ]  -- kidsAsRadios_l ]
@@ -454,53 +442,62 @@ viewTR node =
       -------------------------------------------}
 
 
---node2TR : Id -> Node -> Html Msg
---node2TR parentId node =
+{-----------------------------------------------}
+node2Table : Node -> Html Msg
+node2Table node =
+  let
+    nTable node =
+      table [ title (node.label ++ " " ++ node.id) ] [
+        tr [] ( List.map (\x -> td [] [x]) (viewList node) )
+      ]
+  in
+    case node.value of
+      BoolValue _ ->
+        nTable node
+      StringValue _ ->
+        nTable node
+      _ ->
+        notImplemented node "node2Table"
+
+-----------------------------------------------}
+
+
+{-----------------------------------------------
 node2TR : Node -> Html Msg
 node2TR node =
   let
-    --tds_l = List.map (\x -> td [] [x]) (viewList parentId node)
     tds_l = List.map (\x -> td [] [x]) (viewList node)
   in
     tr [ title (node.label ++ " " ++ node.id) ] tds_l
+-----------------------------------------------}
 
 
 {-----------------------------------------------}
---viewList : Id -> Node -> List (Html Msg)
---viewList parentId node =
 viewList : Node -> List (Html Msg)
 viewList node =
   let
-    inputElement =
+    content : Html Msg
+    content =
       case node.value of
         BoolValue flag ->
           input [ type' "checkbox", checked flag, onCheck (editBool node.id) ] []
         StringValue str ->
           input [ type' "text", value str, onInput (editString node.id) ] []
         RootCmd ->
-          notImplemented node "viewList RootCmd"
+          -- notImplemented node "viewList RootCmd"
+          view node
 
-        --VerGroup ->
         Group isVertical ->
-          notImplemented node ("viewList " ++ (toString node.value))
- {-------------------------------------------------------
-          if isVertical then
-            input [ type' "radio", value parentId, name node.id
-                  , onClick (selectSwitch node.id parentId)
-                  ] []
-        ---HorGroup ->
-          else
-            notImplemented node "viewList HorGroup"
- -------------------------------------------------------}
+          -- notImplemented node ("viewList " ++ (toString node.value))
+          view node
 
         Switch sid ->
-          input [ type' "radio", checked False
-          --, onCheck (editBool node.id)
-          ] []
-          --notImplemented node ("viewList Switch " ++ sid)
+          -- input [ type' "radio", checked False
+          -- ] []
+          view node
   in
     [ label [] [ text node.label ]
-    , inputElement
+    , content
     ]
 -----------------------------------------------}
 

@@ -255,7 +255,7 @@ view model =
   in
     table [] [
       --Html.App.map CallWidget (W.viewTR ".." model.root)
-      Html.App.map CallWidget (W.viewTR model.root)
+      Html.App.map CallWidget (W.view model.root)
     , tr [] [ td [] [
         button [ onClick Save ] [ text "Save" ]
       , h3 [] [ text "Output" ]
