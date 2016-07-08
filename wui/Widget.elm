@@ -16,7 +16,7 @@ module Widget exposing (
     Node, Msg
   , aRoot, aVertical, aHorizontal, aSwitch, aBool, aString
   --, Formatter
-  , fmtList, fmtById, fmtBool
+  , fmtList, fmtById   -- , fmtBool
 
   , update
   , viewTR
@@ -57,8 +57,11 @@ type Value
   = BoolValue Bool
   | StringValue String
   | RootCmd
-  | VerGroup
-  | HorGroup
+  | Group Bool
+    -- Group isVertical -- default True
+    -- a horizontal or vertical group, the flag says if it's vertical: default is vertical
+  --| VerGroup
+  --| HorGroup
   | Switch Id
   --| Tabs Id
 
@@ -89,9 +92,9 @@ fmtById : String -> String -> Formatter
 fmtById cmdFmt listSep =
   KidsByIdFmtr cmdFmt listSep
 
-fmtBool : String -> String -> Formatter
-fmtBool cmdTrue cmdFalse =
-  BoolFmtr cmdTrue cmdFalse
+--fmtBool : String -> String -> Formatter
+--fmtBool cmdTrue cmdFalse =
+--  BoolFmtr cmdTrue cmdFalse
 
 
 aRoot : String -> List Node -> Formatter -> ( Node, List Node )
@@ -104,11 +107,13 @@ aRoot label kidsList fmtr =
 
 aVertical : String -> String -> List Node -> Formatter -> Node
 aVertical id label kidsList fmtr =
-  Node (id ++ "-VG") label VerGroup (KidsList kidsList) fmtr
+  --Node (id ++ "-VG") label VerGroup (KidsList kidsList) fmtr
+  Node (id ++ "-VG") label (Group True) (KidsList kidsList) fmtr
 
 aHorizontal : String -> String -> List Node -> Formatter -> Node
 aHorizontal id label kidsList fmtr =
-  Node (id ++ "-HG") label HorGroup (KidsList kidsList) fmtr
+  --Node (id ++ "-HG") label HorGroup (KidsList kidsList) fmtr
+  Node (id ++ "-HG") label (Group False) (KidsList kidsList) fmtr
 
 aSwitch : String -> String -> List Node -> Node
 aSwitch id label kidsList =
@@ -148,11 +153,10 @@ aString id label cmdFmt =
 
 validateFormatForParam : String -> String
 validateFormatForParam cmdFmt =
-      if contains cmdFmt "{{}}" then
+      if contains "{{}}" cmdFmt then
         ""
       else
         "!! format MUST contain '{{}}' !!"
-
 
 kids : Node -> List Node
 kids node =
@@ -184,10 +188,17 @@ jsonValueRec recurse node =
           ( JE.string s, "String" )
         RootCmd ->
           ( JE.string node.label, "Root" )
-        VerGroup ->
-          ( JE.string node.label, "VerticalGroup" )
-        HorGroup ->
-          ( JE.string node.label, "HorizontalGroup" )
+        Group isVertical ->
+          ( JE.string node.label
+          , if isVertical then
+              "VerticalGroup"
+            else
+              "HorizontalGroup"
+          )
+--        VerGroup ->
+--          ( JE.string node.label, "VerticalGroup" )
+--        HorGroup ->
+--          ( JE.string node.label, "HorizontalGroup" )
         Switch sid ->
           ( JE.string sid, "Switch" )
 
@@ -319,7 +330,7 @@ getSelectedKid sid node =
   List.head ( List.filter (\ kid -> kid.id == sid ) (kids node) )
 
 
-
+{----------------------------------------
 get : Id -> List Node -> Node
 get id nodes =
   let
@@ -331,6 +342,7 @@ get id nodes =
         --aBool id "!!NOT FOUND!!" False (BoolFmtr "!!NOT FOUND - TRUE!!" "!!NOT FOUND - FALSE!!")
       Just node ->
         node
+----------------------------------------}
 
 
 
@@ -338,7 +350,6 @@ get id nodes =
 
 type Msg =
     Modify Id Value
-  --| Activate Bool
 
 update : Msg -> Node -> ( Node, Cmd Msg )
 update msg node =
@@ -350,27 +361,6 @@ updateSingleNode msg node =
     Modify id val ->
       let
         value = val
-{------------------------------------
-          case val of
-            Switch sid ->
-              val...
-            _ ->
-              val
-{  ------------------------------------
-            BoolValue b ->
-              JE.bool b
-            StringValue s ->
-              JE.string s
-            RootCmd ->
-              JE.string node.label
-            VerGroup ->
-              JE.string node.label
-            HorGroup ->
-              JE.string node.label
-            Switch sid ->
-              JE.string sid
-------------------------------------}
-
       in
         if id == node.id then
           ( { node | value = Debug.log ( "update " ++ node.label ) value }
@@ -390,17 +380,6 @@ mapUpdate f node =
     , Cmd.batch ( cmd :: cmds ) )
 -----------------------------------------------------------}
 
-{-----------------------------------------------------------
-activateTree : Bool -> Node -> Node
-activateTree act node =
-  let
-    nKids = List.map (activateTree act) (kids node)
-  in
-    { node
-      | isActive = act
-      , kids = KidsList nKids
-    }
------------------------------------------------------------}
 
 
 
@@ -424,28 +403,21 @@ viewTR parentId node =
             ( List.map (viewTR node.id) ( kids node ) )
           ] ]
 
-    VerGroup ->
-      {---------------------------------------------
-      let
-        x = List.map viewList ( kids node )
-      in
-        tr [] [ td [] [
-          table [ title (node.label ++ " " ++ node.id) ]
-            ( List.map viewTR ( kids node ) )
-        ] ]
-      ---------------------------------------------}
-
+    --VerGroup ->
+    Group isVertical->
+      if isVertical then
         tr [] [ td [] [
           table [ title (node.label ++ " " ++ node.id) ]
             ( List.map (viewTR node.id) ( kids node ) )
         ] ]
+      else
 
-    HorGroup ->
-      let
-        kidsAsTR_l = List.map (viewTR node.id) ( kids node )
-        kidsAsTDs_l = List.map (\ kidAsTR -> td [] [ table [] [ kidAsTR ] ]) kidsAsTR_l
-      in
-        tr [ title (node.label ++ " " ++ node.id) ] kidsAsTDs_l
+--    HorGroup ->
+        let
+          kidsAsTR_l = List.map (viewTR node.id) ( kids node )
+          kidsAsTDs_l = List.map (\ kidAsTR -> td [] [ table [] [ kidAsTR ] ]) kidsAsTR_l
+        in
+          tr [ title (node.label ++ " " ++ node.id) ] kidsAsTDs_l
 
     Switch sid ->
       {-------------------------------------------}
@@ -505,23 +477,20 @@ viewList parentId node =
           input [ type' "text", value str, onInput (editString node.id) ] []
         RootCmd ->
           notImplemented node "viewList RootCmd"
-        VerGroup ->
-          --notImplemented node "viewList VerGroup"
 
---        mkRadioTR (id, lbl) =
---          tr [] [
---            td [] [ label [] [ text lbl ] ]
---          , td [] [
+        --VerGroup ->
+        Group isVertical ->
+          notImplemented node ("viewList " ++ (toString node.value))
+ {-------------------------------------------------------
+          if isVertical then
+            input [ type' "radio", value parentId, name node.id
+                  , onClick (selectSwitch node.id parentId)
+                  ] []
+        ---HorGroup ->
+          else
+            notImplemented node "viewList HorGroup"
+ -------------------------------------------------------}
 
-          input [ type' "radio", value parentId, name node.id
-                    , onClick (selectSwitch node.id parentId)
-                    ] []
-
---                     ]
---          ]
-
-        HorGroup ->
-          notImplemented node "viewList HorGroup"
         Switch sid ->
           input [ type' "radio", checked False
           --, onCheck (editBool node.id)
@@ -545,29 +514,4 @@ selectSwitch sid kid =
 notImplemented : Node -> String -> Html Msg
 notImplemented node errDesr =
   div [ {-color "red"-} ] [ text ( "ERROR: " ++ errDesr ++ " NOT IMPLEMENTED: " ++ node.label ++ ": " ++ ( toString node.value ) ) ]
-
-
-
-{------------------------------------------------ }
-view : Node -> Html Msg
-view node =
-  case node.value of
-    BoolValue flag ->
-      -- notImplemented node "view BoolValue"
-      node2TR node
-
-    StringValue str ->
-      -- notImplemented node "view StringValue"
-      node2TR node
-
-    RootCmd ->
-        div []
-          [ h2 []
-            [ a [ href "http://localhost:33333" ] [ text node.label ]
-            ]
-          , table []
-            --( List.map node2TR ( kids node ) )
-            ( List.map view ( kids node ) )
-          ]
---------------------------------------------------}
 
