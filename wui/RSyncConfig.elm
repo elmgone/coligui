@@ -24,7 +24,7 @@ import Json.Decode as JD exposing ((:=))
 import Json.Encode as JE
 
 import Widget as W exposing (
-    aRoot, aVertical, aHorizontal, aSwitch, aBool, aString
+    aRoot, aVertical, aHorizontal, aSwitch, aBool, aBoolX, aBooT, aString
   --, gKidsFmt
   , fmtList   --, fmtById
   )
@@ -59,16 +59,20 @@ init =
     ( root, nodes ) = aRoot "RSync" [
       locationSwitches
     ] (fmtList "rsync {{}} # ..." " ")
+
     
-    verbose   = aBool "v" "Verbose"   "increase verbosity"                           False "--verbose"
-    quiet     = aBool "q" "Quiet"     "suppress non-error messages"                  False "--quiet"
-    checksum  = aBool "c" "Checksum"  "skip based on checksum, not mod-time & size"  False "--checksum"
-    archive   = aBool "a" "Archive"   "archive mode; equals -rlptgoD (no -H,-A,-X)"  False "--archive"
+--    aBooT id label descr cmdTrue =
+--      aBoolX id label descr True cmdTrue ""
     
-    recursive = aBool "r" "Recursive" "recurse into directories"                     False "--recursive"
-    relative  = aBool "R" "Relative"  "use relative path names"                      False "--relative"
-    backup    = aBool "b" "Backup"    "make backups (see --suffix & --backup-dir)"   False "--backup"
-    update    = aBool "u" "Update"    "skip files that are newer on the receiver"    False "--update"
+    verbose   = aBool  "v" "Verbose"   "increase verbosity"                            "--verbose"
+    quiet     = aBool  "q" "Quiet"     "suppress non-error messages"                   "--quiet"
+    checksum  = aBooT  "c" "Checksum"  "skip based on checksum, not mod-time & size"   "--checksum"
+    archive   = aBool  "a" "Archive"   "archive mode; equals -rlptgoD (no -H,-A,-X)"   "--archive"
+    
+    recursive = aBooT  "r" "Recursive" "recurse into directories"                      "--recursive"
+    relative  = aBool  "R" "Relative"  "use relative path names"                       "--relative"
+    backup    = aBool  "b" "Backup"    "make backups (see --suffix & --backup-dir)"    "--backup"
+    update    = aBool  "u" "Update"    "skip files that are newer on the receiver"     "--update"
 
     options1 =
       aVertical "flags1" "Options 1" [
@@ -76,18 +80,10 @@ init =
       , quiet
       , checksum
       , archive
-      --, recursive
-      --, relative
-      --, backup
-      --, update
       ] (fmtList "{{}}" " ")
 
     options2 =
       aVertical "flags2" "Options 2" [
-      --  verbose
-      --, quiet
-      --, checksum
-      --, archive
         recursive
       , relative
       , backup
@@ -103,7 +99,6 @@ init =
     aVertical "all" "All RSync" [
       options
     , locationSwitches
-    --, flags1
     ] (fmtList "{{}}" " ")
 
 {--------------------------------------------------------------------------------------

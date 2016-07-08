@@ -14,7 +14,7 @@
 
 module Widget exposing (
     Node, Msg, Id
-  , aRoot, aVertical, aHorizontal, aSwitch, aBool, aBoolX, aString
+  , aRoot, aVertical, aHorizontal, aSwitch, aBool, aBoolX, aBooT, aString
   --, Formatter
   , fmtList, fmtById   -- , fmtBool
 
@@ -132,13 +132,20 @@ aSwitch id label kidsList =
 --aBool id label flag cmdTrue cmdFalse =
 --  Node (id ++ "_B") label (BoolValue flag) (KidsList []) (BoolFmtr cmdTrue cmdFalse)
 
-aBool : Id -> String -> String -> Bool -> String -> Node
-aBool id label descr flag cmdTrue =
-  Node (id ++ "_B") label descr (BoolValue flag) (KidsList []) (BoolFmtr cmdTrue "")
+--aBool : Id -> String -> String -> Bool -> String -> Node
+--aBool id label descr flag cmdTrue =
+--  Node (id ++ "_B") label descr (BoolValue flag) (KidsList []) (BoolFmtr cmdTrue "")
+aBool : Id -> String -> String -> String -> Node
+aBool id label descr cmdTrue =
+  Node (id ++ "_B") label descr (BoolValue False) (KidsList []) (BoolFmtr cmdTrue "")
 
 aBoolX : Id -> String -> String -> Bool -> String -> String -> Node
 aBoolX id label descr flag cmdTrue cmdFalse =
   Node (id ++ "_BX") label descr (BoolValue flag) (KidsList []) (BoolFmtr cmdTrue cmdFalse)
+
+aBooT : Id -> String -> String -> String -> Node
+aBooT id label descr cmdTrue =
+  aBoolX id label descr True cmdTrue ""
 
 aString : Id -> String -> String -> String -> Node
 aString id label descr cmdFmt =
