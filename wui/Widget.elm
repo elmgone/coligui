@@ -329,7 +329,8 @@ cmdOf node =
 -------------------------------------------}
 
   in
-    Debug.log ("cmdOf " ++ node.id) resultCmdlet
+    ---Debug.log ("cmdOf " ++ node.id) resultCmdlet
+    resultCmdlet
 
 
 getSelectedKid : Id -> Node -> Maybe Node

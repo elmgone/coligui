@@ -8,7 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
-	"log"
+	//	"log"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -16,6 +16,7 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/mgutz/logxi/v1"
 	"github.com/toqueteos/webbrowser"
 	"gopkg.in/yaml.v2"
 
@@ -54,7 +55,8 @@ type (
 func (eh *errHandler_T) safe(step func()) {
 	if eh.err == nil {
 		step()
-		eh.ifErr(func() { log.Printf("ERROR: %s\n", eh.err) })
+		//		eh.ifErr(func() { log.Printf("ERROR: %s\n", eh.err) })
+		eh.ifErr(func() { log.Error("ERROR", "err", eh.err) })
 	}
 }
 
@@ -123,6 +125,11 @@ func (eh *errHandler_T) ServeGin(port int, baseDir string) error {
 	router.POST("/job/:cmd", func(c *gin.Context) {
 		eh.handleJobPost(baseDir, c)
 	})
+
+	router.GET("/job/:cmd", func(c *gin.Context) {
+		eh.handleJobPost(baseDir, c)
+	})
+
 	//	router.POST("/job/:cmd", func(c *gin.Context) {
 	//		cmd_s := c.Param("cmd")
 	//		//		id_s := c.Param("id")
@@ -251,7 +258,8 @@ func (eh *errHandler_T) ServeGin(port int, baseDir string) error {
 		time.Sleep(300 * time.Millisecond)
 		err := webbrowser.Open(url)
 		if err != nil {
-			log.Printf("FAILED to open url in browser: %s\n", err)
+			//			log.Printf("FAILED to open url in browser: %s\n", err)
+			log.Error("FAILED to open url in browser", "err", err)
 		}
 	}()
 
@@ -267,8 +275,9 @@ func (eh *errHandler_T) handleJobPost(baseDir string, c *gin.Context) error {
 
 	var body_b []byte
 	eh.safe(func() { body_b, eh.err = ioutil.ReadAll(c.Request.Body) })
-	msg1 := fmt.Sprintf("POSTed to /job/%s: %d bytes ...", cmd_s, len(body_b))
-	fmt.Println(msg1)
+	//	msg1 := fmt.Sprintf("POSTed to /job/%s: %d bytes ...", cmd_s, len(body_b))
+	//	fmt.Println(msg1)
+	log.Info("POSTed to /job", "cmd", cmd_s, "bytes", len(body_b))
 
 	var job Job
 	eh.safe(func() { eh.err = json.Unmarshal(body_b, &job) })
@@ -276,23 +285,26 @@ func (eh *errHandler_T) handleJobPost(baseDir string, c *gin.Context) error {
 		eh.err = job.Check()
 		//		fmt.Printf("got '%s': '''%s''' from %#v\n", cmd_s, cmdRes, node)
 		//			fmt.Printf("got '%s': %#v: %v\n", cmd_s, job, eh.err)
-		fmt.Printf("got '%s': err=%v\n", cmd_s, eh.err)
+		//		fmt.Printf("got '%s': err=%v\n", cmd_s, eh.err)
 	})
 
 	eh.safe(func() {
-		jsonSha1 := eh.hashSha1(job, json.Marshal)
-		job.YamlSha1 = eh.hashSha1(job, yaml.Marshal)
-		job.JsonSha1 = jsonSha1
+		//		jsonSha1 := eh.hashSha1(job, json.Marshal)
+		//		job.YamlSha1 = eh.hashSha1(job, yaml.Marshal)
+		//		job.JsonSha1 = jsonSha1
+		job.JsonSha1, job.YamlSha1 =
+			eh.hashSha1(job, json.Marshal),
+			eh.hashSha1(job, yaml.Marshal)
 	})
 
 	var job2_yb []byte
 	eh.safe(func() {
 		job2_yb, eh.err = yaml.Marshal(job)
 	})
-
-	msg2 := fmt.Sprintf("MarshalIndent /job/%s: %d bytes ...",
-		cmd_s, len(job2_yb))
-	fmt.Println(msg2)
+	log.Info("Marshal job to YAML", "cmd", cmd_s, "size", len(job2_yb))
+	//	msg2 := fmt.Sprintf("MarshalIndent /job/%s: %d bytes ...",
+	//		cmd_s, len(job2_yb))
+	//	fmt.Println(msg2)
 	//		job.Root.CmdLet += msg2
 
 	timeStamp := "" // fmt.Sprintf("@ %[4]v", time.Now())
@@ -317,10 +329,16 @@ EOYD
 	os.MkdirAll(cmdDir, 0777)
 
 	jobName := strings.TrimSpace(strings.ToLower(job.Name))
+	log.Info("generated job script",
+		"cmd", cmd_s, "cmdName", cmdName, "cmdDir", cmdDir,
+		"jobName", jobName, "size", len(jobScript_b))
 
-	cs := eh.hashSha1(jobScript_b, nil)[:6]
-	jobFName := cmdName + "-" + jobName + "." + cs + ".cgs"
-	jobFPath := filepath.Join(cmdDir, jobFName)
+	var jobFPath, cs string
+	eh.safe(func() {
+		cs = eh.hashSha1(jobScript_b, nil)[:6]
+		jobFName := cmdName + "-" + jobName + "." + cs + ".cgs"
+		jobFPath = filepath.Join(cmdDir, jobFName)
+	})
 
 	haveToSaveJob := true
 
@@ -341,8 +359,7 @@ EOYD
 	//	eh.safe(func() {
 	eh.safe(func() {
 		eh.forAllJobs(
-			baseDir, cmdName, jobName,
-			"."+cs, // toIgnore,
+			baseDir, cmdName, jobName, "."+cs, // toIgnore,
 
 			// cmdDir, cmdName, jobName
 			func(oldJobFPath string, oldJob_b []byte) error {
@@ -409,18 +426,43 @@ func (eh *errHandler_T) forAllJobs(
 	}
 }
 
-//func (eh *errHandler_T) handleJobList(baseDir string, c *gin.Context) error {
-//}
+func (eh *errHandler_T) handleJobList(baseDir string, c *gin.Context) error {
+	cmdName := c.Param("cmd")
+	//		id_s := c.Param("id")
+
+	//... parse JSON in post body
+	defer c.Request.Body.Close()
+
+	eh.safe(func() {
+		eh.forAllJobs(
+			baseDir, cmdName, "*", //-- jobName,
+			"", //	"."+cs, // toIgnore,
+
+			// cmdDir, cmdName, jobName
+			func(oldJobFPath string, oldJob_b []byte) error {
+				fmt.Printf("found: '%s': %d bytes\n",
+					oldJobFPath, len(oldJob_b),
+				)
+				//				eh.renameToBak(cmdDir, cmdName, jobName, oldJobFPath, oldJob_b)
+				return eh.err
+			},
+		)
+	})
+
+	eh.ifErr(func() { c.AbortWithError(http.StatusBadRequest, eh.err) })
+	return eh.err
+}
 
 func (eh *errHandler_T) hashSha1(
-	x interface{},
+	obj interface{},
 	marshal func(interface{}) ([]byte, error),
+	//	size int,
 ) (sha1Hash string) {
 	var buf_b []byte
 	if marshal == nil {
-		buf_b = x.([]byte)
+		buf_b = obj.([]byte)
 	} else {
-		eh.safe(func() { buf_b, eh.err = marshal(x) })
+		eh.safe(func() { buf_b, eh.err = marshal(obj) })
 	}
 
 	h := sha1.New()

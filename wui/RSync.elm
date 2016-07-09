@@ -27,6 +27,7 @@ import Html.Events exposing (..)
 import Html.Attributes exposing (..)
 import Http exposing (..)
 import Task
+import String
 import Json.Decode as JD exposing ((:=))
 import Json.Encode as JE
 
@@ -176,6 +177,8 @@ view model =
         ] ++ [ wTreeLI model.root ] )
       ]
     ( rootName, rootView ) = W.viewRoot model.root
+    jobName = model.cfgName
+    jobNameEmpty = String.isEmpty ( String.trim jobName )
   in
     div [] [
 --      Html.App.map CallWidget (W.view model.root)
@@ -187,7 +190,7 @@ view model =
                 , value model.cfgName
                 , onInput EditCfgName
                 ] [] ]
-      , td [] [ button [ onClick Save ] [ text "Save" ] ]
+      , td [] [ button [ onClick Save, disabled jobNameEmpty ] [ text "Save" ] ]
       ] ]
     , Html.App.map CallWidget rootView
     , h3 [] [ text "Output" ]
