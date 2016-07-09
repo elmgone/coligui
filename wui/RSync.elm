@@ -43,6 +43,7 @@ main =
 
 type alias Model =
   { id        : String
+  , cfgName   : String
   , output    : String
   , debug     : Bool
 
@@ -72,7 +73,7 @@ init =
       RSyncConfig.init
     ] (fmtList "rsync {{}} # ..." " ")
   in
-    ( Model "" "" False root
+    ( Model "" "default" "" False root
     , Cmd.none )
 
 
@@ -84,6 +85,7 @@ type Msg =
     | SaveSucceed SaveResult
     | SaveFail Http.Error
     | ToggleDebug Bool
+    | EditCfgName String
 
 update : Msg -> Model -> (Model, Cmd Msg)
 update msg model =
@@ -119,6 +121,10 @@ update msg model =
       ToggleDebug dbg ->
             ( { model | debug = dbg }, Cmd.none )
 
+      EditCfgName cName ->
+            ( { model | cfgName = cName }
+            , Cmd.none
+            )
 
 
 type alias SaveResult =
@@ -155,20 +161,12 @@ view model =
   let
     wTreeLI w =
       if model.debug then
-        --ul [] [ Html.App.map CallWidget (W.nodeAsHtmlLI w) ]
         Html.App.map CallWidget (W.nodeAsHtmlLI w)
       else
         div [] []
     dbg =
       div [] [
         h4 [] [ text "debug" ]
-      {-----------------
-      , div [] [
-          label [] [ text "extensive" ]
-        , input [ type' "checkbox", onCheck ToggleDebug ] []
-        ]
-      -----------------}
-      --, ul [] [ Html.App.map CallWidget (W.nodeAsHtmlLI model.root) ]
       , ul [] ( [
           li [] [ text (W.cmdOf model.root) ]
         , li [] [
@@ -176,16 +174,24 @@ view model =
           , input [ type' "checkbox", onCheck ToggleDebug ] []
           ]
         ] ++ [ wTreeLI model.root ] )
-      --, wTree model.root
       ]
-
+    ( rootName, rootView ) = W.viewRoot model.root
   in
     div [] [
-      Html.App.map CallWidget (W.view model.root)
-    , button [ onClick Save ] [ text "Save" ]
+--      Html.App.map CallWidget (W.view model.root)
+      h2 [] [ text rootName ]
+    , table [] [ tr [] [
+        td [] [ label [] [ text "Configuration" ] ]
+      , td [] [ input [
+                  type' "text"
+                , value model.cfgName
+                , onInput EditCfgName
+                ] [] ]
+      , td [] [ button [ onClick Save ] [ text "Save" ] ]
+      ] ]
+    , Html.App.map CallWidget rootView
     , h3 [] [ text "Output" ]
     , text model.output
-    --, Html.App.map CallWidget dbg
     , dbg
     ]
 

@@ -261,7 +261,6 @@ func (eh *errHandler_T) ServeGin(port int, baseDir string) error {
 	return router.Run(port_s) // listen and server on 0.0.0.0:8080
 }
 
-//func (eh *errHandler_T) handleJobPost(baseDir string, cmd_s string, body io.Reader) error {
 func (eh *errHandler_T) handleJobPost(baseDir string, c *gin.Context) error {
 	cmd_s := c.Param("cmd")
 	//		id_s := c.Param("id")
@@ -283,23 +282,7 @@ func (eh *errHandler_T) handleJobPost(baseDir string, c *gin.Context) error {
 		fmt.Printf("got '%s': err=%v\n", cmd_s, eh.err)
 	})
 
-	//	var job_jb []byte
-	//	hj := sha1.New()
-	//	eh.avoidErr(func() { job_jb, eh.err = json.Marshal(job) })
-	//	eh.avoidErr(func() { _, eh.err = hj.Write(job_jb) })
-
-	//	var job_yb []byte
-	//	hy := sha1.New()
-	//	eh.avoidErr(func() { job_yb, eh.err = yaml.Marshal(job) })
-	//	eh.avoidErr(func() { _, eh.err = hy.Write(job_yb) })
-
-	//	if eh.hasErr(func() { c.AbortWithError(http.StatusBadRequest, eh.err) }) {
-	//		return eh.err
-	//	}
-
 	eh.avoidErr(func() {
-		//		job.JsonSha1 = hex.EncodeToString(hj.Sum(nil))
-		//		job.YamlSha1 = hex.EncodeToString(hy.Sum(nil))
 		jsonSha1 := eh.hashSha1(job, json.Marshal)
 		job.YamlSha1 = eh.hashSha1(job, yaml.Marshal)
 		job.JsonSha1 = jsonSha1
@@ -307,7 +290,6 @@ func (eh *errHandler_T) handleJobPost(baseDir string, c *gin.Context) error {
 
 	var job2_yb []byte
 	eh.avoidErr(func() {
-		//		node_ijb, eh.err = json.MarshalIndent(job, "", "  ")
 		job2_yb, eh.err = yaml.Marshal(job)
 	})
 
@@ -324,6 +306,7 @@ cat <<EOYD | less
 #
 # begin:  CoLiGui job configuration for:  %[1]s - %[2]s
 #
+
 %[3]s
 #
 # end:  CoLiGui job configuration for:  %[1]s - %[2]s
@@ -337,8 +320,6 @@ EOYD
 
 	jobName := strings.TrimSpace(strings.ToLower(job.Name))
 
-	//	//	oldJobFName := jobFName + "." + eh.hashSha1(oldJob_b, nil)
-	//	jobFName := cmdName + "-" + jobName + ".cgs" + "." + eh.hashSha1(jobScript_b, nil)[:4]
 	cs := eh.hashSha1(jobScript_b, nil)[:6]
 	jobFName := cmdName + "-" + jobName + "." + cs + ".cgs"
 	jobFPath := filepath.Join(cmdDir, jobFName)
@@ -350,46 +331,8 @@ EOYD
 		var oldJob_b []byte
 		eh.avoidErr(func() { oldJob_b, eh.err = ioutil.ReadFile(jobFPath) })
 
-		//		if bytes.Compare(jobScript_b, oldJob_b) != 0 {
 		haveToSaveJob = bytes.Compare(jobScript_b, oldJob_b) != 0
-		//		if haveToSaveJob {
-		//			//		}
-
-		//			//		var oldJob Job
-		//			//		//		eh.avoidErr(func() { eh.err = json.Unmarshal(oldJob_b, &oldJob) })
-		//			//		eh.avoidErr(func() { eh.err = yaml.Unmarshal(oldJob_yb, &oldJob) })
-
-		//			//		//		if job.Id != oldJob.Id {
-		//			//		if job.JsonSha1 != oldJob.JsonSha1 || job.YamlSha1 != oldJob.YamlSha1 {
-		//			//			oldNode := &oldJob.Root
-		//			//			eh.avoidErr(func() { eh.err = oldNode.ProcessTree() })
-
-		//			//			oldJobFName := jobFName + "." + oldJob.JsonSha1
-		//			bakJobFName := jobFName + "." + eh.hashSha1(oldJob_b, nil)
-		//			bakJobFDir := filepath.Join(cmdDir, jobName)
-		//			os.MkdirAll(bakJobFDir, 0777)
-		//			bakJobFPath := filepath.Join(bakJobFDir, bakJobFName)
-		//			eh.avoidErr(func() { eh.err = os.Rename(jobFPath, bakJobFPath) })
-		//		}
 	}
-
-	//	var node_ijb []byte
-	//	eh.avoidErr(func() {
-	//		node_ijb, eh.err = json.MarshalIndent(job, "", "  ")
-	//	})
-
-	//	var job2_yb []byte
-	//	eh.avoidErr(func() {
-	//		//		node_ijb, eh.err = json.MarshalIndent(job, "", "  ")
-	//		job2_yb, eh.err = yaml.Marshal(job)
-	//		//		yaml.Marshal(job)
-	//	})
-	//	msg2 := fmt.Sprintf("MarshalIndent /job/%s: %d bytes ...",
-	//		cmd_s, len(job2_yb))
-	//	fmt.Println(msg2)
-	//	//		job.Root.CmdLet += msg2
-
-	//	oldJobFPath := jobFPath
 
 	cmdMsg := "# job already known, not saved" //-job.Root.CmdLet
 	if haveToSaveJob {
@@ -405,7 +348,6 @@ EOYD
 		foundFiles_l, eh.err = filepath.Glob(jobFPathPat)
 		if len(foundFiles_l) > 0 {
 			if len(foundFiles_l) > 1 {
-				//				panic("found multiple job files")
 				fmt.Println("found multiple job files")
 			}
 			for _, oldJobFPath := range foundFiles_l {
@@ -418,9 +360,7 @@ EOYD
 
 				cs := eh.hashSha1(oldJob_b, nil) //--[:6]
 				bakJobFName := cmdName + "-" + jobName + "." + cs + ".cgs"
-				//				jobFPath := filepath.Join(cmdDir, jobFName)
 
-				//				bakJobFName := jobFName + "." + eh.hashSha1(oldJob_b, nil)
 				bakJobFDir := filepath.Join(cmdDir, jobName)
 				os.MkdirAll(bakJobFDir, 0777)
 				bakJobFPath := filepath.Join(bakJobFDir, bakJobFName)

@@ -19,7 +19,7 @@ module Widget exposing (
   , fmtList, fmtById   -- , fmtBool
 
   , update
-  , view
+  , view, viewRoot
   , treeToJson, nodeToJson  --, toJson
   , jobAsJson
 
@@ -407,6 +407,14 @@ mapUpdate f node =
 
 
 -- VIEW
+
+viewRoot : Node -> ( String, Html Msg )
+viewRoot node =
+  let
+    kidsCont_l = List.map view ( kids node )
+    cont = div [] kidsCont_l
+  in
+    ( node.label, cont)
 
 view : Node -> Html Msg
 view node =
