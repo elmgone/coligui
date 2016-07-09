@@ -200,10 +200,6 @@ jsonValueRec recurse node =
             else
               "HorizontalGroup"
           )
---        VerGroup ->
---          ( JE.string node.label, "VerticalGroup" )
---        HorGroup ->
---          ( JE.string node.label, "HorizontalGroup" )
         Switch sid ->
           ( JE.string sid, "Switch" )
 
@@ -217,7 +213,6 @@ jsonValueRec recurse node =
         []
 
     rootNode = JE.object ( [
---    rootNode = [
         ( "id",          JE.string node.id )
       , ( "label",       JE.string node.label )
       , ( "description", JE.string node.descr )
@@ -230,28 +225,9 @@ jsonValueRec recurse node =
   in
     rootNode
 
-
---treeToJson : Int -> Node -> String
---treeToJson indent node =
---  JE.encode indent (jsonValueRec True node)
-
-
 jobAsJson : Int -> Node -> String
 jobAsJson indent node =
   let
-  {-------------------------------------------- }
-    --rootNode = JE.object ( [
-    rootNode = [
-        ( "id",          JE.string node.id )
-      , ( "label",       JE.string node.label )
-      , ( "description", JE.string node.descr )
-      , ( "type",        JE.string typ )
-      , ( "value",       val )
-      , ( "cmdlet",      JE.string cmdlet )
-      -- , ( "cmdFmt", JE.string node.cmdFmt )
-      -- , ( "active", JE.bool node.isActive )
-      ] ++ extra
-  --------------------------------------------}
     rootNode = jsonValueRec True node
 
 --  Job struct {

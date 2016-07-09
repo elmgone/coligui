@@ -122,14 +122,18 @@ update msg model =
 
 
 type alias SaveResult =
-  { id  : String
-  , cmd : String
+--  { id  : String
+  { jid  : String
+  , yid  : String
+  , cmd  : String
   }
 
 decodeSaved : JD.Decoder SaveResult
 decodeSaved =
-  JD.object2 SaveResult
-    ("id"  := JD.string)
+  JD.object3 SaveResult
+--    ("id"  := JD.string)
+    ("jid"  := JD.string)
+    ("yid"  := JD.string)
     ("cmd" := JD.string)
 
 saveJob : W.Node -> Cmd Msg

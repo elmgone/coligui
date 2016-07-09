@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	//	"io"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -16,22 +17,20 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/toqueteos/webbrowser"
+	"gopkg.in/yaml.v2"
 
 	"coligui/wui"
 )
 
 type (
 	Job struct {
-		Id   string
 		Name string
-		Root Node
+		//		Id   string
+		JsonSha1 string
+		YamlSha1 string
+		Root     Node
 	}
 
-	//  { id       : Id
-	//  , label    : String
-	//  , value    : Value
-	//  , kids     : Kids
-	//  , isActive : Bool
 	Node struct {
 		Id          string
 		Type        string
@@ -124,110 +123,119 @@ func (eh *errHandler_T) ServeGin(port int, baseDir string) error {
 	})
 
 	router.POST("/job/:cmd", func(c *gin.Context) {
-		cmd_s := c.Param("cmd")
-		//		id_s := c.Param("id")
-
-		//... parse JSON in post body
-		defer c.Request.Body.Close()
-
-		var body_b []byte
-		eh.avoidErr(func() {
-			body_b, eh.err = ioutil.ReadAll(c.Request.Body)
-		})
-		msg1 := fmt.Sprintf("POSTed to /job/%s: %d bytes ...", cmd_s, len(body_b))
-		fmt.Println(msg1)
-
-		var job Job
-		eh.avoidErr(func() {
-			eh.err = json.Unmarshal(body_b, &job)
-		})
-		eh.avoidErr(func() {
-			eh.err = job.Check()
-			//		fmt.Printf("got '%s': '''%s''' from %#v\n", cmd_s, cmdRes, node)
-			//			fmt.Printf("got '%s': %#v: %v\n", cmd_s, job, eh.err)
-			fmt.Printf("got '%s': err=%v\n", cmd_s, eh.err)
-		})
-
-		var job_b []byte
-		eh.avoidErr(func() {
-			//			job.Root.CmdLet += msg1
-			job_b, eh.err = json.Marshal(job)
-		})
-
-		h := sha1.New()
-		eh.avoidErr(func() {
-			_ /*n*/, eh.err = h.Write(job_b)
-		})
-		if eh.hasErr(func() {
-			c.AbortWithError(http.StatusBadRequest, eh.err)
-		}) {
-			return
-		}
-
-		job.Id = hex.EncodeToString(h.Sum(nil))
-
-		cmdName := strings.TrimSpace(strings.ToLower(job.Root.Label))
-		cmdDir := filepath.Join(baseDir, cmdName)
-		os.MkdirAll(cmdDir, 0777)
-
-		jobName := strings.TrimSpace(strings.ToLower(job.Name))
-
-		jobFName := cmdName + "-" + jobName + ".cgs"
-		jobFPath := filepath.Join(cmdDir, jobFName)
-
-		fInfo, err := os.Stat(jobFPath)
-		if err == nil && !fInfo.IsDir() {
-			var oldJob_b []byte
-			eh.avoidErr(func() {
-				oldJob_b, eh.err = ioutil.ReadFile(jobFPath)
-			})
-
-			var oldJob Job
-			eh.avoidErr(func() {
-				eh.err = json.Unmarshal(oldJob_b, &oldJob)
-			})
-
-			if job.Id != oldJob.Id {
-				oldNode := &oldJob.Root
-				eh.avoidErr(func() {
-					eh.err = oldNode.ProcessTree()
-				})
-
-				oldJobFName := jobFName + "." + oldJob.Id
-				oldJobFDir := filepath.Join(cmdDir, jobName)
-				os.MkdirAll(oldJobFDir, 0777)
-				oldJobFPath := filepath.Join(oldJobFDir, oldJobFName)
-				eh.avoidErr(func() {
-					eh.err = os.Rename(jobFPath, oldJobFPath)
-				})
-			}
-		}
-
-		var node_ijb []byte
-		eh.avoidErr(func() {
-			node_ijb, eh.err = json.MarshalIndent(job, "", "  ")
-		})
-		msg2 := fmt.Sprintf("MarshalIndent /job/%s: %d bytes ...",
-			cmd_s, len(node_ijb))
-		fmt.Println(msg2)
-		//		job.Root.CmdLet += msg2
-
-		eh.avoidErr(func() {
-			eh.err = ioutil.WriteFile(jobFPath, node_ijb, 0777)
-		})
-
-		eh.avoidErr(func() {
-			res := gin.H{
-				"id":  job.Id,
-				"cmd": job.Root.CmdLet,
-			}
-			c.JSON(http.StatusCreated, res)
-		})
-
-		eh.hasErr(func() {
-			c.AbortWithError(http.StatusBadRequest, eh.err)
-		})
+		eh.handleJobPost(baseDir, c)
 	})
+	//	router.POST("/job/:cmd", func(c *gin.Context) {
+	//		cmd_s := c.Param("cmd")
+	//		//		id_s := c.Param("id")
+
+	//	router.POST("/job/:cmd", eh.handleJobPost(baseDir, c))
+
+	//	router.POST("/job/:cmd", func(c *gin.Context) {
+	//		cmd_s := c.Param("cmd")
+	//		//		id_s := c.Param("id")
+
+	//		//... parse JSON in post body
+	//		defer c.Request.Body.Close()
+
+	//		var body_b []byte
+	//		eh.avoidErr(func() {
+	//			body_b, eh.err = ioutil.ReadAll(c.Request.Body)
+	//		})
+	//		msg1 := fmt.Sprintf("POSTed to /job/%s: %d bytes ...", cmd_s, len(body_b))
+	//		fmt.Println(msg1)
+
+	//		var job Job
+	//		eh.avoidErr(func() {
+	//			eh.err = json.Unmarshal(body_b, &job)
+	//		})
+	//		eh.avoidErr(func() {
+	//			eh.err = job.Check()
+	//			//		fmt.Printf("got '%s': '''%s''' from %#v\n", cmd_s, cmdRes, node)
+	//			//			fmt.Printf("got '%s': %#v: %v\n", cmd_s, job, eh.err)
+	//			fmt.Printf("got '%s': err=%v\n", cmd_s, eh.err)
+	//		})
+
+	//		var job_b []byte
+	//		eh.avoidErr(func() {
+	//			//			job.Root.CmdLet += msg1
+	//			job_b, eh.err = json.Marshal(job)
+	//		})
+
+	//		h := sha1.New()
+	//		eh.avoidErr(func() {
+	//			_ /*n*/, eh.err = h.Write(job_b)
+	//		})
+	//		if eh.hasErr(func() {
+	//			c.AbortWithError(http.StatusBadRequest, eh.err)
+	//		}) {
+	//			return
+	//		}
+
+	//		job.Id = hex.EncodeToString(h.Sum(nil))
+
+	//		cmdName := strings.TrimSpace(strings.ToLower(job.Root.Label))
+	//		cmdDir := filepath.Join(baseDir, cmdName)
+	//		os.MkdirAll(cmdDir, 0777)
+
+	//		jobName := strings.TrimSpace(strings.ToLower(job.Name))
+
+	//		jobFName := cmdName + "-" + jobName + ".cgs"
+	//		jobFPath := filepath.Join(cmdDir, jobFName)
+
+	//		fInfo, err := os.Stat(jobFPath)
+	//		if err == nil && !fInfo.IsDir() {
+	//			var oldJob_b []byte
+	//			eh.avoidErr(func() {
+	//				oldJob_b, eh.err = ioutil.ReadFile(jobFPath)
+	//			})
+
+	//			var oldJob Job
+	//			eh.avoidErr(func() {
+	//				eh.err = json.Unmarshal(oldJob_b, &oldJob)
+	//			})
+
+	//			if job.Id != oldJob.Id {
+	//				oldNode := &oldJob.Root
+	//				eh.avoidErr(func() {
+	//					eh.err = oldNode.ProcessTree()
+	//				})
+
+	//				oldJobFName := jobFName + "." + oldJob.Id
+	//				oldJobFDir := filepath.Join(cmdDir, jobName)
+	//				os.MkdirAll(oldJobFDir, 0777)
+	//				oldJobFPath := filepath.Join(oldJobFDir, oldJobFName)
+	//				eh.avoidErr(func() {
+	//					eh.err = os.Rename(jobFPath, oldJobFPath)
+	//				})
+	//			}
+	//		}
+
+	//		var node_ijb []byte
+	//		eh.avoidErr(func() {
+	//			node_ijb, eh.err = json.MarshalIndent(job, "", "  ")
+	//		})
+	//		msg2 := fmt.Sprintf("MarshalIndent /job/%s: %d bytes ...",
+	//			cmd_s, len(node_ijb))
+	//		fmt.Println(msg2)
+	//		//		job.Root.CmdLet += msg2
+
+	//		eh.avoidErr(func() {
+	//			eh.err = ioutil.WriteFile(jobFPath, node_ijb, 0777)
+	//		})
+
+	//		eh.avoidErr(func() {
+	//			res := gin.H{
+	//				"id":  job.Id,
+	//				"cmd": job.Root.CmdLet,
+	//			}
+	//			c.JSON(http.StatusCreated, res)
+	//		})
+
+	//		eh.hasErr(func() {
+	//			c.AbortWithError(http.StatusBadRequest, eh.err)
+	//		})
+	//	})
 
 	router.GET("/ping", func(c *gin.Context) {
 		c.JSON(200, gin.H{
@@ -250,6 +258,126 @@ func (eh *errHandler_T) ServeGin(port int, baseDir string) error {
 	}()
 
 	return router.Run(port_s) // listen and server on 0.0.0.0:8080
+}
+
+//func (eh *errHandler_T) handleJobPost(baseDir string, cmd_s string, body io.Reader) error {
+func (eh *errHandler_T) handleJobPost(baseDir string, c *gin.Context) error {
+	cmd_s := c.Param("cmd")
+	//		id_s := c.Param("id")
+
+	//... parse JSON in post body
+	defer c.Request.Body.Close()
+
+	var body_b []byte
+	eh.avoidErr(func() { body_b, eh.err = ioutil.ReadAll(c.Request.Body) })
+	msg1 := fmt.Sprintf("POSTed to /job/%s: %d bytes ...", cmd_s, len(body_b))
+	fmt.Println(msg1)
+
+	var job Job
+	eh.avoidErr(func() { eh.err = json.Unmarshal(body_b, &job) })
+	eh.avoidErr(func() {
+		eh.err = job.Check()
+		//		fmt.Printf("got '%s': '''%s''' from %#v\n", cmd_s, cmdRes, node)
+		//			fmt.Printf("got '%s': %#v: %v\n", cmd_s, job, eh.err)
+		fmt.Printf("got '%s': err=%v\n", cmd_s, eh.err)
+	})
+
+	var job_jb []byte
+	eh.avoidErr(func() {
+		//			job.Root.CmdLet += msg1
+		job_jb, eh.err = json.Marshal(job)
+		//		job_yb, eh.err = yaml.Marshal(job)
+		//		yaml.Marshal(job)
+	})
+
+	hj := sha1.New()
+	eh.avoidErr(func() { _, eh.err = hj.Write(job_jb) })
+
+	var job_yb []byte
+	eh.avoidErr(func() {
+		//			job.Root.CmdLet += msg1
+		//		job_jb, eh.err = json.Marshal(job)
+		job_yb, eh.err = yaml.Marshal(job)
+		//		yaml.Marshal(job)
+	})
+
+	hy := sha1.New()
+	eh.avoidErr(func() { _, eh.err = hy.Write(job_yb) })
+	if eh.hasErr(func() { c.AbortWithError(http.StatusBadRequest, eh.err) }) {
+		return eh.err
+	}
+
+	eh.avoidErr(func() {
+		job.JsonSha1 = hex.EncodeToString(hj.Sum(nil))
+		job.YamlSha1 = hex.EncodeToString(hy.Sum(nil))
+	})
+
+	cmdName := strings.TrimSpace(strings.ToLower(job.Root.Label))
+	cmdDir := filepath.Join(baseDir, cmdName)
+	os.MkdirAll(cmdDir, 0777)
+
+	jobName := strings.TrimSpace(strings.ToLower(job.Name))
+
+	jobFName := cmdName + "-" + jobName + ".cgs"
+	jobFPath := filepath.Join(cmdDir, jobFName)
+
+	fInfo, err := os.Stat(jobFPath)
+	if err == nil && !fInfo.IsDir() {
+		var oldJob_yb []byte
+		eh.avoidErr(func() { oldJob_yb, eh.err = ioutil.ReadFile(jobFPath) })
+
+		var oldJob Job
+		//		eh.avoidErr(func() { eh.err = json.Unmarshal(oldJob_b, &oldJob) })
+		eh.avoidErr(func() { eh.err = yaml.Unmarshal(oldJob_yb, &oldJob) })
+
+		//		if job.Id != oldJob.Id {
+		if job.JsonSha1 != oldJob.JsonSha1 || job.YamlSha1 != oldJob.YamlSha1 {
+			oldNode := &oldJob.Root
+			eh.avoidErr(func() { eh.err = oldNode.ProcessTree() })
+
+			oldJobFName := jobFName + "." + oldJob.JsonSha1
+			oldJobFDir := filepath.Join(cmdDir, jobName)
+			os.MkdirAll(oldJobFDir, 0777)
+			oldJobFPath := filepath.Join(oldJobFDir, oldJobFName)
+			eh.avoidErr(func() { eh.err = os.Rename(jobFPath, oldJobFPath) })
+		}
+	}
+
+	//	var node_ijb []byte
+	//	eh.avoidErr(func() {
+	//		node_ijb, eh.err = json.MarshalIndent(job, "", "  ")
+	//	})
+
+	var job2_yb []byte
+	eh.avoidErr(func() {
+		//		node_ijb, eh.err = json.MarshalIndent(job, "", "  ")
+		job2_yb, eh.err = yaml.Marshal(job)
+		//		yaml.Marshal(job)
+	})
+	msg2 := fmt.Sprintf("MarshalIndent /job/%s: %d bytes ...",
+		cmd_s, len(job2_yb))
+	fmt.Println(msg2)
+	//		job.Root.CmdLet += msg2
+
+	eh.avoidErr(func() {
+		eh.err = ioutil.WriteFile(jobFPath, job2_yb, //node_ijb,
+			0777)
+	})
+
+	eh.avoidErr(func() {
+		res := gin.H{
+			//			"id":  job.Id,
+			"jid": job.JsonSha1,
+			"yid": job.YamlSha1,
+			"cmd": job.Root.CmdLet,
+		}
+		c.JSON(http.StatusCreated, res)
+	})
+
+	eh.hasErr(func() {
+		c.AbortWithError(http.StatusBadRequest, eh.err)
+	})
+	return eh.err
 }
 
 //func (node *Node) ProcessNode(cmdletsById_m cmdletsById_M) string {
