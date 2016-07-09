@@ -115,7 +115,7 @@ update msg model =
             ( { model | output = toString err }
             , Cmd.none
             )
-      
+
       ToggleDebug dbg ->
             ( { model | debug = dbg }, Cmd.none )
 
@@ -136,7 +136,8 @@ saveJob : W.Node -> Cmd Msg
 saveJob node =
   let
     url = "/job/RSync"
-    body_s = W.treeToJson 2 node
+    --body_s = W.treeToJson 2 node
+    body_s = W.jobAsJson 2 node
     postCall = Http.post decodeSaved url (Http.string body_s)
   in
     Task.perform SaveFail SaveSucceed postCall
@@ -173,7 +174,7 @@ view model =
         ] ++ [ wTreeLI model.root ] )
       --, wTree model.root
       ]
-      
+
   in
     div [] [
       Html.App.map CallWidget (W.view model.root)

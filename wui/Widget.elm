@@ -21,6 +21,7 @@ module Widget exposing (
   , update
   , view
   , treeToJson, nodeToJson  --, toJson
+  , jobAsJson
 
   , nodeAsHtmlLI, cmdOf
   )
@@ -214,17 +215,58 @@ jsonValueRec recurse node =
         [ ( "kids", JE.list ( List.map (jsonValueRec recurse) kids_l ) ) ]
       else
         []
+
+    rootNode = JE.object ( [
+--    rootNode = [
+        ( "id",          JE.string node.id )
+      , ( "label",       JE.string node.label )
+      , ( "description", JE.string node.descr )
+      , ( "type",        JE.string typ )
+      , ( "value",       val )
+      , ( "cmdlet",      JE.string cmdlet )
+      -- , ( "cmdFmt", JE.string node.cmdFmt )
+      -- , ( "active", JE.bool node.isActive )
+      ] ++ extra )
   in
-    JE.object ( [
-      ( "id",          JE.string node.id )
-    , ( "label",       JE.string node.label )
-    , ( "description", JE.string node.descr )
-    , ( "type",        JE.string typ )
-    , ( "value",       val )
-    , ( "cmdlet",      JE.string cmdlet )
-    -- , ( "cmdFmt", JE.string node.cmdFmt )
-    -- , ( "active", JE.bool node.isActive )
-    ] ++ extra )
+    rootNode
+
+
+--treeToJson : Int -> Node -> String
+--treeToJson indent node =
+--  JE.encode indent (jsonValueRec True node)
+
+
+jobAsJson : Int -> Node -> String
+jobAsJson indent node =
+  let
+  {-------------------------------------------- }
+    --rootNode = JE.object ( [
+    rootNode = [
+        ( "id",          JE.string node.id )
+      , ( "label",       JE.string node.label )
+      , ( "description", JE.string node.descr )
+      , ( "type",        JE.string typ )
+      , ( "value",       val )
+      , ( "cmdlet",      JE.string cmdlet )
+      -- , ( "cmdFmt", JE.string node.cmdFmt )
+      -- , ( "active", JE.bool node.isActive )
+      ] ++ extra
+  --------------------------------------------}
+    rootNode = jsonValueRec True node
+
+--  Job struct {
+--    Id   string
+--    Name string
+--    Root Node
+--  }
+
+    job = JE.object ( [
+        ( "name",          JE.string "hra" )
+--    ,   ( "root",          JE.object rootNode )
+    ,   ( "root",          rootNode )
+    ] )
+  in
+    JE.encode indent job
 
 
 nodeAsHtmlLI : Node -> Html Msg

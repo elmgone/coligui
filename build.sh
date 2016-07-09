@@ -19,10 +19,18 @@ else
 	UPX="echo running coligui ..."
 fi
 
+if echo $* | grep run > /dev/null ; then
+##    RUN="( coligui wui & )"
+    RUN="coligui wui"
+else
+	RUN="echo ok."
+fi
+
 (cd wui && $EG go generate) &&
 	$EG go install -race &&
 	$UPX &&
-	coligui wui
+    $RUN
 
+##	coligui wui
 ## 	$EG upx --ultra-brute /go/bin/coligui &&
 ##

@@ -18,11 +18,19 @@ else
 	BLD="echo ok."
 fi
 
+if echo $* | grep run > /dev/null ; then
+##    RUN="( coligui wui & )"
+    RUN="coligui wui"
+else
+	RUN="echo ok."
+fi
+
 cd wui &&
 	elm make RSync.elm &&
 	firefox index.html &&
 	cd .. &&
-	$BLD
+	$BLD &&
+    $RUN
 
 ##	./build.sh
 
