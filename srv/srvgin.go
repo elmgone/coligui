@@ -51,18 +51,16 @@ type (
 	}
 )
 
-func (eh *errHandler_T) avoidErr(step func() /*error*/) {
+func (eh *errHandler_T) safe(step func()) {
 	if eh.err == nil {
-		/*eh.err =*/ step()
-		eh.hasErr(func() {
-			log.Printf("ERROR: %s\n", eh.err)
-		})
+		step()
+		eh.ifErr(func() { log.Printf("ERROR: %s\n", eh.err) })
 	}
 }
 
-func (eh *errHandler_T) hasErr(handle func( /*error*/ )) bool {
+func (eh *errHandler_T) ifErr(handle func()) bool {
 	if eh.err != nil {
-		handle( /*eh.err*/ )
+		handle()
 	}
 	return eh.err != nil
 }
@@ -139,17 +137,17 @@ func (eh *errHandler_T) ServeGin(port int, baseDir string) error {
 	//		defer c.Request.Body.Close()
 
 	//		var body_b []byte
-	//		eh.avoidErr(func() {
+	//		eh.safe(func() {
 	//			body_b, eh.err = ioutil.ReadAll(c.Request.Body)
 	//		})
 	//		msg1 := fmt.Sprintf("POSTed to /job/%s: %d bytes ...", cmd_s, len(body_b))
 	//		fmt.Println(msg1)
 
 	//		var job Job
-	//		eh.avoidErr(func() {
+	//		eh.safe(func() {
 	//			eh.err = json.Unmarshal(body_b, &job)
 	//		})
-	//		eh.avoidErr(func() {
+	//		eh.safe(func() {
 	//			eh.err = job.Check()
 	//			//		fmt.Printf("got '%s': '''%s''' from %#v\n", cmd_s, cmdRes, node)
 	//			//			fmt.Printf("got '%s': %#v: %v\n", cmd_s, job, eh.err)
@@ -157,13 +155,13 @@ func (eh *errHandler_T) ServeGin(port int, baseDir string) error {
 	//		})
 
 	//		var job_b []byte
-	//		eh.avoidErr(func() {
+	//		eh.safe(func() {
 	//			//			job.Root.CmdLet += msg1
 	//			job_b, eh.err = json.Marshal(job)
 	//		})
 
 	//		h := sha1.New()
-	//		eh.avoidErr(func() {
+	//		eh.safe(func() {
 	//			_ /*n*/, eh.err = h.Write(job_b)
 	//		})
 	//		if eh.hasErr(func() {
@@ -186,18 +184,18 @@ func (eh *errHandler_T) ServeGin(port int, baseDir string) error {
 	//		fInfo, err := os.Stat(jobFPath)
 	//		if err == nil && !fInfo.IsDir() {
 	//			var oldJob_b []byte
-	//			eh.avoidErr(func() {
+	//			eh.safe(func() {
 	//				oldJob_b, eh.err = ioutil.ReadFile(jobFPath)
 	//			})
 
 	//			var oldJob Job
-	//			eh.avoidErr(func() {
+	//			eh.safe(func() {
 	//				eh.err = json.Unmarshal(oldJob_b, &oldJob)
 	//			})
 
 	//			if job.Id != oldJob.Id {
 	//				oldNode := &oldJob.Root
-	//				eh.avoidErr(func() {
+	//				eh.safe(func() {
 	//					eh.err = oldNode.ProcessTree()
 	//				})
 
@@ -205,14 +203,14 @@ func (eh *errHandler_T) ServeGin(port int, baseDir string) error {
 	//				oldJobFDir := filepath.Join(cmdDir, jobName)
 	//				os.MkdirAll(oldJobFDir, 0777)
 	//				oldJobFPath := filepath.Join(oldJobFDir, oldJobFName)
-	//				eh.avoidErr(func() {
+	//				eh.safe(func() {
 	//					eh.err = os.Rename(jobFPath, oldJobFPath)
 	//				})
 	//			}
 	//		}
 
 	//		var node_ijb []byte
-	//		eh.avoidErr(func() {
+	//		eh.safe(func() {
 	//			node_ijb, eh.err = json.MarshalIndent(job, "", "  ")
 	//		})
 	//		msg2 := fmt.Sprintf("MarshalIndent /job/%s: %d bytes ...",
@@ -220,11 +218,11 @@ func (eh *errHandler_T) ServeGin(port int, baseDir string) error {
 	//		fmt.Println(msg2)
 	//		//		job.Root.CmdLet += msg2
 
-	//		eh.avoidErr(func() {
+	//		eh.safe(func() {
 	//			eh.err = ioutil.WriteFile(jobFPath, node_ijb, 0777)
 	//		})
 
-	//		eh.avoidErr(func() {
+	//		eh.safe(func() {
 	//			res := gin.H{
 	//				"id":  job.Id,
 	//				"cmd": job.Root.CmdLet,
@@ -268,27 +266,27 @@ func (eh *errHandler_T) handleJobPost(baseDir string, c *gin.Context) error {
 	defer c.Request.Body.Close()
 
 	var body_b []byte
-	eh.avoidErr(func() { body_b, eh.err = ioutil.ReadAll(c.Request.Body) })
+	eh.safe(func() { body_b, eh.err = ioutil.ReadAll(c.Request.Body) })
 	msg1 := fmt.Sprintf("POSTed to /job/%s: %d bytes ...", cmd_s, len(body_b))
 	fmt.Println(msg1)
 
 	var job Job
-	eh.avoidErr(func() { eh.err = json.Unmarshal(body_b, &job) })
-	eh.avoidErr(func() {
+	eh.safe(func() { eh.err = json.Unmarshal(body_b, &job) })
+	eh.safe(func() {
 		eh.err = job.Check()
 		//		fmt.Printf("got '%s': '''%s''' from %#v\n", cmd_s, cmdRes, node)
 		//			fmt.Printf("got '%s': %#v: %v\n", cmd_s, job, eh.err)
 		fmt.Printf("got '%s': err=%v\n", cmd_s, eh.err)
 	})
 
-	eh.avoidErr(func() {
+	eh.safe(func() {
 		jsonSha1 := eh.hashSha1(job, json.Marshal)
 		job.YamlSha1 = eh.hashSha1(job, yaml.Marshal)
 		job.JsonSha1 = jsonSha1
 	})
 
 	var job2_yb []byte
-	eh.avoidErr(func() {
+	eh.safe(func() {
 		job2_yb, eh.err = yaml.Marshal(job)
 	})
 
@@ -297,21 +295,22 @@ func (eh *errHandler_T) handleJobPost(baseDir string, c *gin.Context) error {
 	fmt.Println(msg2)
 	//		job.Root.CmdLet += msg2
 
+	timeStamp := "" // fmt.Sprintf("@ %[4]v", time.Now())
 	jobScript_b := []byte(fmt.Sprintf(`#!/bin/bash
 #
 # generated script - do not edit
 #
 cat <<EOYD | less
 #
-# begin:  CoLiGui job configuration for:  %[1]s - %[2]s  @ %[4]v
+# begin:  CoLiGui job configuration for:  %[1]s - %[2]s  %[4]s
 #
 
 %[3]s
 #
-# end:  CoLiGui job configuration for:  %[1]s - %[2]s  @ %[4]v
+# end:  CoLiGui job configuration for:  %[1]s - %[2]s  %[4]s
 #
 EOYD
-`, job.Root.Label, job.Name, job2_yb, time.Now()))
+`, job.Root.Label, job.Name, job2_yb, timeStamp))
 
 	cmdName := strings.TrimSpace(strings.ToLower(job.Root.Label))
 	cmdDir := filepath.Join(baseDir, cmdName)
@@ -328,47 +327,100 @@ EOYD
 	fInfo, err := os.Stat(jobFPath)
 	if err == nil && !fInfo.IsDir() {
 		var oldJob_b []byte
-		eh.avoidErr(func() { oldJob_b, eh.err = ioutil.ReadFile(jobFPath) })
+		eh.safe(func() { oldJob_b, eh.err = ioutil.ReadFile(jobFPath) })
 
 		haveToSaveJob = bytes.Compare(jobScript_b, oldJob_b) != 0
 	}
 
-	cmdMsg := "# job already known, not saved" //-job.Root.CmdLet
+	cmdMsg := "# job already known, not saved: " + jobFPath //-job.Root.CmdLet
 	if haveToSaveJob {
-		eh.avoidErr(func() { eh.err = ioutil.WriteFile(jobFPath, jobScript_b, 0777) })
-		cmdMsg = "# job saved as " + jobFPath
+		eh.safe(func() { eh.err = ioutil.WriteFile(jobFPath, jobScript_b, 0777) })
+		cmdMsg = "# job saved as: " + jobFPath
 	}
 
-	eh.avoidErr(func() {
-		jobFNamePat := cmdName + "-" + jobName + "*.cgs"
-		jobFPathPat := filepath.Join(cmdDir, jobFNamePat)
+	eh.safe(func() {
+		eh.safe(func() {
+			eh.forAllJobs(
+				baseDir, cmdName, jobName,
+				"."+cs, // toIgnore,
+				//			os.Rename,
 
-		var foundFiles_l []string
-		foundFiles_l, eh.err = filepath.Glob(jobFPathPat)
-		if len(foundFiles_l) > 0 {
-			if len(foundFiles_l) > 1 {
-				fmt.Println("found multiple job files")
-			}
-			for _, oldJobFPath := range foundFiles_l {
-				if oldJobFPath == jobFPath {
-					continue
-				}
+				// cmdDir, cmdName, jobName
+				func(oldJobFPath string, oldJob_b []byte) error {
 
-				var oldJob_b []byte
-				eh.avoidErr(func() { oldJob_b, eh.err = ioutil.ReadFile(oldJobFPath) })
+					eh.renameToBak(cmdDir, cmdName, jobName, oldJobFPath, oldJob_b)
 
-				cs := eh.hashSha1(oldJob_b, nil) //--[:6]
-				bakJobFName := cmdName + "-" + jobName + "." + cs + ".cgs"
+					//				var oldJob_b []byte
+					//				eh.safe(func() { oldJob_b, eh.err = ioutil.ReadFile(oldJobFPath) })
 
-				bakJobFDir := filepath.Join(cmdDir, jobName)
-				os.MkdirAll(bakJobFDir, 0777)
-				bakJobFPath := filepath.Join(bakJobFDir, bakJobFName)
-				eh.avoidErr(func() { eh.err = os.Rename(oldJobFPath, bakJobFPath) })
-			}
-		}
+					//				cs := eh.hashSha1(oldJob_b, nil) //--[:6]
+					//				bakJobFName := cmdName + "-" + jobName + "." + cs + ".cgs"
+
+					//				bakJobFDir := filepath.Join(cmdDir, jobName)
+					//				os.MkdirAll(bakJobFDir, 0777)
+					//				bakJobFPath := filepath.Join(bakJobFDir, bakJobFName)
+					//				eh.safe(func() { eh.err = os.Rename(oldJobFPath, bakJobFPath) })
+					return eh.err
+				},
+			) /*error*/
+
+			//		jobFNamePat := cmdName + "-" + jobName + "*.cgs"
+			//		jobFPathPat := filepath.Join(cmdDir, jobFNamePat)
+
+			//		var foundFiles_l []string
+			//		foundFiles_l, eh.err = filepath.Glob(jobFPathPat)
+			//		if len(foundFiles_l) > 0 {
+			//			if len(foundFiles_l) > 1 {
+			//				fmt.Println("found multiple job files")
+			//			}
+			//			for _, oldJobFPath := range foundFiles_l {
+			//				if oldJobFPath == jobFPath {
+			//					continue
+			//				}
+
+			//				var oldJob_b []byte
+			//				eh.safe(func() { oldJob_b, eh.err = ioutil.ReadFile(oldJobFPath) })
+
+			//				cs := eh.hashSha1(oldJob_b, nil) //--[:6]
+			//				bakJobFName := cmdName + "-" + jobName + "." + cs + ".cgs"
+
+			//				bakJobFDir := filepath.Join(cmdDir, jobName)
+			//				os.MkdirAll(bakJobFDir, 0777)
+			//				bakJobFPath := filepath.Join(bakJobFDir, bakJobFName)
+			//				eh.safe(func() { eh.err = os.Rename(oldJobFPath, bakJobFPath) })
+			//			}
+			//		}
+		})
+
+		//		jobFNamePat := cmdName + "-" + jobName + "*.cgs"
+		//		jobFPathPat := filepath.Join(cmdDir, jobFNamePat)
+
+		//		var foundFiles_l []string
+		//		foundFiles_l, eh.err = filepath.Glob(jobFPathPat)
+		//		if len(foundFiles_l) > 0 {
+		//			if len(foundFiles_l) > 1 {
+		//				fmt.Println("found multiple job files")
+		//			}
+		//			for _, oldJobFPath := range foundFiles_l {
+		//				if oldJobFPath == jobFPath {
+		//					continue
+		//				}
+
+		//				var oldJob_b []byte
+		//				eh.safe(func() { oldJob_b, eh.err = ioutil.ReadFile(oldJobFPath) })
+
+		//				cs := eh.hashSha1(oldJob_b, nil) //--[:6]
+		//				bakJobFName := cmdName + "-" + jobName + "." + cs + ".cgs"
+
+		//				bakJobFDir := filepath.Join(cmdDir, jobName)
+		//				os.MkdirAll(bakJobFDir, 0777)
+		//				bakJobFPath := filepath.Join(bakJobFDir, bakJobFName)
+		//				eh.safe(func() { eh.err = os.Rename(oldJobFPath, bakJobFPath) })
+		//			}
+		//		}
 	})
 
-	eh.avoidErr(func() {
+	eh.safe(func() {
 		res := gin.H{
 			//			"id":  job.Id,
 			"jid": job.JsonSha1,
@@ -378,33 +430,264 @@ EOYD
 		c.JSON(http.StatusCreated, res)
 	})
 
-	eh.hasErr(func() {
-		c.AbortWithError(http.StatusBadRequest, eh.err)
-	})
+	eh.ifErr(func() { c.AbortWithError(http.StatusBadRequest, eh.err) })
 	return eh.err
 }
+
+func (eh *errHandler_T) renameToBak(
+	cmdDir, cmdName, jobName, oldJobFPath string,
+	oldJob_b []byte,
+) {
+	//	var oldJob_b []byte
+	//	eh.safe(func() { oldJob_b, eh.err = ioutil.ReadFile(oldJobFPath) })
+
+	cs := eh.hashSha1(oldJob_b, nil) //--[:6]
+	//			bakJobFName := cmdName + "-" + jobName + "." + cs + ".cgs"
+
+	//			bakJobFDir := filepath.Join(cmdDir, jobName)
+	//			os.MkdirAll(bakJobFDir, 0777)
+	//			bakJobFPath := filepath.Join(bakJobFDir, bakJobFName)
+
+	//	bakJobFPath := getJobFPath("."+cs, true)
+	//	getJobFPath := func(pat string, subdir bool) string {
+	//		return mkJobFPath(cmdDir, cmdName, jobName, pat, subdir)
+	//	}
+	bakJobFPath := mkJobFPath(cmdDir, cmdName, jobName, "."+cs, true) //--("."+cs, true)
+
+	eh.safe(func() { eh.err = os.Rename(oldJobFPath, bakJobFPath) })
+	//	eh.safe(func() { eh.err = handleFile(oldJobFPath, bakJobFPath) })
+}
+
+func (eh *errHandler_T) forAllJobs(
+	baseDir, cmdName string,
+	jobName string,
+	toIgnore string,
+	//	handleFile func(string, string) error,
+	handleFile func(string, []byte) error,
+) /*error*/ {
+	cmdDir := filepath.Join(baseDir, cmdName)
+	os.MkdirAll(cmdDir, 0777)
+
+	//	jobFNamePat := cmdName + "-" + jobName + "*.cgs"
+	//	jobFPathPat := filepath.Join(cmdDir, jobFNamePat)
+
+	//	jobFNameIgn := cmdName + "-" + jobName + toIgnore + ".cgs"
+	//	jobFPathIgn := filepath.Join(cmdDir, jobFNameIgn)
+
+	//	getJobFPath := func(pat string, subdir bool) string {
+	getJobFPath := func(pat string) string {
+		return mkJobFPath(cmdDir, cmdName, jobName, pat, false)
+		//		return mkJobFPath(cmdDir, cmdName, "*", pat, false)
+	}
+	jobFPathPat := getJobFPath("*")      //--), false)
+	jobFPathIgn := getJobFPath(toIgnore) //--), false)
+
+	var foundFiles_l []string
+	foundFiles_l, eh.err = filepath.Glob(jobFPathPat)
+	if len(foundFiles_l) > 0 {
+		if len(foundFiles_l) > 1 {
+			fmt.Println("found multiple job files")
+		}
+		for _, oldJobFPath := range foundFiles_l {
+			if oldJobFPath == jobFPathIgn {
+				continue
+			}
+
+			var oldJob_b []byte
+			eh.safe(func() { oldJob_b, eh.err = ioutil.ReadFile(oldJobFPath) })
+
+			//			cs := eh.hashSha1(oldJob_b, nil) //--[:6]
+			//			//			bakJobFName := cmdName + "-" + jobName + "." + cs + ".cgs"
+
+			//			//			bakJobFDir := filepath.Join(cmdDir, jobName)
+			//			//			os.MkdirAll(bakJobFDir, 0777)
+			//			//			bakJobFPath := filepath.Join(bakJobFDir, bakJobFName)
+			//			bakJobFPath := getJobFPath("."+cs, true)
+
+			//			//			eh.safe(func() { eh.err = os.Rename(oldJobFPath, bakJobFPath) })
+			//			eh.safe(func() { eh.err = handleFile(oldJobFPath, bakJobFPath) })
+			eh.safe(func() { eh.err = handleFile(oldJobFPath, oldJob_b) })
+		}
+	}
+}
+
+//func (eh *errHandler_T) handleJobList(baseDir string, c *gin.Context) error {
+//	cmdName := c.Param("cmd")
+//	//		id_s := c.Param("id")
+
+//	cmdDir := filepath.Join(baseDir, cmdName)
+
+//	//... parse JSON in post body
+//	defer c.Request.Body.Close()
+
+//	var body_b []byte
+//	eh.safe(func() { body_b, eh.err = ioutil.ReadAll(c.Request.Body) })
+//	msg1 := fmt.Sprintf("POSTed to /job/%s: %d bytes ...", cmdName, len(body_b))
+//	fmt.Println(msg1)
+
+//	var job Job
+//	eh.safe(func() { eh.err = json.Unmarshal(body_b, &job) })
+//	eh.safe(func() {
+//		eh.err = job.Check()
+//		//		fmt.Printf("got '%s': '''%s''' from %#v\n", cmd_s, cmdRes, node)
+//		//			fmt.Printf("got '%s': %#v: %v\n", cmd_s, job, eh.err)
+//		fmt.Printf("got '%s': err=%v\n", cmdName, eh.err)
+//	})
+
+//	eh.safe(func() {
+//		jsonSha1 := eh.hashSha1(job, json.Marshal)
+//		job.YamlSha1 = eh.hashSha1(job, yaml.Marshal)
+//		job.JsonSha1 = jsonSha1
+//	})
+
+//	var job2_yb []byte
+//	eh.safe(func() {
+//		job2_yb, eh.err = yaml.Marshal(job)
+//	})
+
+//	msg2 := fmt.Sprintf("MarshalIndent /job/%s: %d bytes ...",
+//		cmdName, len(job2_yb))
+//	fmt.Println(msg2)
+//	//		job.Root.CmdLet += msg2
+
+//	jobScript_b := []byte(fmt.Sprintf(`#!/bin/bash
+//#
+//# generated script - do not edit
+//#
+//cat <<EOYD | less
+//#
+//# begin:  CoLiGui job configuration for:  %[1]s - %[2]s  @ %[4]v
+//#
+
+//%[3]s
+//#
+//# end:  CoLiGui job configuration for:  %[1]s - %[2]s  @ %[4]v
+//#
+//EOYD
+//`, job.Root.Label, job.Name, job2_yb, time.Now()))
+
+//	cmdName := strings.TrimSpace(strings.ToLower(job.Root.Label))
+//	cmdDir := filepath.Join(baseDir, cmdName)
+//	os.MkdirAll(cmdDir, 0777)
+
+//	jobName := strings.TrimSpace(strings.ToLower(job.Name))
+
+//	cs := eh.hashSha1(jobScript_b, nil)[:6]
+//	jobFName := cmdName + "-" + jobName + "." + cs + ".cgs"
+//	jobFPath := filepath.Join(cmdDir, jobFName)
+
+//	haveToSaveJob := true
+
+//	fInfo, err := os.Stat(jobFPath)
+//	if err == nil && !fInfo.IsDir() {
+//		var oldJob_b []byte
+//		eh.safe(func() { oldJob_b, eh.err = ioutil.ReadFile(jobFPath) })
+
+//		haveToSaveJob = bytes.Compare(jobScript_b, oldJob_b) != 0
+//	}
+
+//	cmdMsg := "# job already known, not saved" //-job.Root.CmdLet
+//	if haveToSaveJob {
+//		eh.safe(func() { eh.err = ioutil.WriteFile(jobFPath, jobScript_b, 0777) })
+//		cmdMsg = "# job saved as " + jobFPath
+//	}
+
+//	eh.safe(func() {
+//		eh.forAllJobs(
+//			baseDir, cmdName, jobName, "."+cs, // toIgnore,
+//			//			os.Rename,
+
+//			// cmdDir, cmdName, jobName
+//			func(oldJobFPath string) error {
+
+//				eh.renameToBak(cmdDir, cmdName, jobName, oldJobFPath)
+
+//				//				var oldJob_b []byte
+//				//				eh.safe(func() { oldJob_b, eh.err = ioutil.ReadFile(oldJobFPath) })
+
+//				//				cs := eh.hashSha1(oldJob_b, nil) //--[:6]
+//				//				bakJobFName := cmdName + "-" + jobName + "." + cs + ".cgs"
+
+//				//				bakJobFDir := filepath.Join(cmdDir, jobName)
+//				//				os.MkdirAll(bakJobFDir, 0777)
+//				//				bakJobFPath := filepath.Join(bakJobFDir, bakJobFName)
+//				//				eh.safe(func() { eh.err = os.Rename(oldJobFPath, bakJobFPath) })
+//				return eh.err
+//			},
+//		) /*error*/
+
+//		//		jobFNamePat := cmdName + "-" + jobName + "*.cgs"
+//		//		jobFPathPat := filepath.Join(cmdDir, jobFNamePat)
+
+//		//		var foundFiles_l []string
+//		//		foundFiles_l, eh.err = filepath.Glob(jobFPathPat)
+//		//		if len(foundFiles_l) > 0 {
+//		//			if len(foundFiles_l) > 1 {
+//		//				fmt.Println("found multiple job files")
+//		//			}
+//		//			for _, oldJobFPath := range foundFiles_l {
+//		//				if oldJobFPath == jobFPath {
+//		//					continue
+//		//				}
+
+//		//				var oldJob_b []byte
+//		//				eh.safe(func() { oldJob_b, eh.err = ioutil.ReadFile(oldJobFPath) })
+
+//		//				cs := eh.hashSha1(oldJob_b, nil) //--[:6]
+//		//				bakJobFName := cmdName + "-" + jobName + "." + cs + ".cgs"
+
+//		//				bakJobFDir := filepath.Join(cmdDir, jobName)
+//		//				os.MkdirAll(bakJobFDir, 0777)
+//		//				bakJobFPath := filepath.Join(bakJobFDir, bakJobFName)
+//		//				eh.safe(func() { eh.err = os.Rename(oldJobFPath, bakJobFPath) })
+//		//			}
+//		//		}
+//	})
+
+//	eh.safe(func() {
+//		res := gin.H{
+//			//			"id":  job.Id,
+//			"jid": job.JsonSha1,
+//			"yid": job.YamlSha1,
+//			"cmd": cmdMsg, // job.Root.CmdLet,
+//		}
+//		c.JSON(http.StatusCreated, res)
+//	})
+
+//	eh.ifErr(func() { c.AbortWithError(http.StatusBadRequest, eh.err) })
+//	return eh.err
+//}
 
 func (eh *errHandler_T) hashSha1(
 	x interface{},
 	marshal func(interface{}) ([]byte, error),
 ) (sha1Hash string) {
 	var buf_b []byte
-
 	if marshal == nil {
 		buf_b = x.([]byte)
 	} else {
-		eh.avoidErr(func() { buf_b, eh.err = marshal(x) })
+		eh.safe(func() { buf_b, eh.err = marshal(x) })
 	}
 
 	h := sha1.New()
-	eh.avoidErr(func() { _, eh.err = h.Write(buf_b) })
-
-	//	if eh.hasErr(func() { c.AbortWithError(http.StatusBadRequest, eh.err) }) {
-	//		return eh.err
-	//	}
-
-	eh.avoidErr(func() { sha1Hash = hex.EncodeToString(h.Sum(nil)) })
+	eh.safe(func() { _, eh.err = h.Write(buf_b) })
+	eh.safe(func() { sha1Hash = hex.EncodeToString(h.Sum(nil)) })
 	return sha1Hash
+}
+
+func mkJobFPath(cmdDir, cmdName, jobName, toIgnore string, subdir bool) string {
+	jobFNameX := cmdName + "-" + jobName + toIgnore + ".cgs"
+	x := []string{cmdDir}
+	if subdir {
+		x = append(x, jobName)
+	}
+	jobFDirX := filepath.Join(x...)
+	os.MkdirAll(jobFDirX, 0777)
+
+	x = append(x, jobFNameX)
+	//	jobFPathX := filepath.Join(cmdDir, jobFNameX)
+	jobFPathX := filepath.Join(x...)
+	return jobFPathX
 }
 
 //func (node *Node) ProcessNode(cmdletsById_m cmdletsById_M) string {
