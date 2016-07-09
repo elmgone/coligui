@@ -5,14 +5,14 @@
 #   - alternatively it can also be built using elm, go, ego
 #
 
-if which eg.sh > /dev/null; then
-	EG=$(which eg.sh)
-fi
+#if which eg > /dev/null; then
+#	EG=$(which eg)
+#fi
 
 if echo $* | grep upx > /dev/null ; then
 	# UPX="$EG upx --ultra-brute /go/bin/coligui"
 	UPX="$EG upx -9 /go/bin/coligui"
-	if echo $* | grep brute > /dev/null ; then
+	if echo $* | grep -e brute -e ultra > /dev/null ; then
 		UPX="$EG upx --ultra-brute /go/bin/coligui"
 	fi
 else

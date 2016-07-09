@@ -123,7 +123,6 @@ func (eh *errHandler_T) ServeGin(port int, baseDir string) error {
 		wui.WriteWuiHtml(c.Writer)
 	})
 
-	//	r.GET("/job/:cmd/:id", func(c *gin.Context) {
 	router.POST("/job/:cmd", func(c *gin.Context) {
 		cmd_s := c.Param("cmd")
 		//		id_s := c.Param("id")
@@ -132,69 +131,39 @@ func (eh *errHandler_T) ServeGin(port int, baseDir string) error {
 		defer c.Request.Body.Close()
 
 		var body_b []byte
-		eh.avoidErr(func() /*error*/ {
+		eh.avoidErr(func() {
 			body_b, eh.err = ioutil.ReadAll(c.Request.Body)
-			//			return err
-			//			if err != nil {
-			//				c.AbortWithError(http.StatusBadRequest, err)
-			//				return
-			//			}
 		})
-		msg1 := fmt.Sprintf(" POSTed to /job/%s: %d bytes ... ", cmd_s, len(body_b))
+		msg1 := fmt.Sprintf("POSTed to /job/%s: %d bytes ...", cmd_s, len(body_b))
 		fmt.Println(msg1)
-		//		c.String(http.StatusOK, `"%s"`, body_b)
 
-		//		var node Node //- gin.H
-		var job Job //- gin.H
-		eh.avoidErr(func() /*error*/ {
+		var job Job
+		eh.avoidErr(func() {
 			eh.err = json.Unmarshal(body_b, &job)
-			//			if err != nil {
-			//				c.AbortWithError(http.StatusBadRequest, err)
-			//				return
-			//			}
 		})
-		//		node := &job.Root
-		eh.avoidErr(func() /*error*/ {
-			//		cmdRes :=
-			//			eh.err = job.Root.ProcessTree()
+		eh.avoidErr(func() {
 			eh.err = job.Check()
 			//		fmt.Printf("got '%s': '''%s''' from %#v\n", cmd_s, cmdRes, node)
 			//			fmt.Printf("got '%s': %#v: %v\n", cmd_s, job, eh.err)
 			fmt.Printf("got '%s': err=%v\n", cmd_s, eh.err)
-			//			if err != nil {
-			//				c.AbortWithError(http.StatusBadRequest, err)
-			//				return
-			//			}
 		})
 
 		var job_b []byte
-		eh.avoidErr(func() /*error*/ {
+		eh.avoidErr(func() {
 			//			job.Root.CmdLet += msg1
-			//			cmdRes := node.CmdLet
-			//			fmt.Printf("got '%s': '''%s''' from %#v\n", cmd_s, cmdRes, node)
-
 			job_b, eh.err = json.Marshal(job)
-			//		if err != nil {
-			//			c.AbortWithError(http.StatusBadRequest, err)
-			//			return
-			//		}
 		})
 
 		h := sha1.New()
-		eh.avoidErr(func() /*error*/ {
+		eh.avoidErr(func() {
 			_ /*n*/, eh.err = h.Write(job_b)
-			//			if err != nil {
-			//				c.AbortWithError(http.StatusBadRequest, err)
-			//				return
-			//			}
 		})
-		if eh.hasErr(func( /*err error*/ ) {
+		if eh.hasErr(func() {
 			c.AbortWithError(http.StatusBadRequest, eh.err)
 		}) {
 			return
 		}
 
-		//		id_s := hex.EncodeToString(h.Sum(nil))
 		job.Id = hex.EncodeToString(h.Sum(nil))
 
 		cmdName := strings.TrimSpace(strings.ToLower(job.Root.Label))
@@ -209,96 +178,55 @@ func (eh *errHandler_T) ServeGin(port int, baseDir string) error {
 		fInfo, err := os.Stat(jobFPath)
 		if err == nil && !fInfo.IsDir() {
 			var oldJob_b []byte
-			eh.avoidErr(func() /*error*/ {
+			eh.avoidErr(func() {
 				oldJob_b, eh.err = ioutil.ReadFile(jobFPath)
-				//				if err != nil {
-				//					c.AbortWithError(http.StatusBadRequest, err)
-				//					return
-				//				}
 			})
 
-			var oldJob Job //- gin.H
-			eh.avoidErr(func() /*error*/ {
+			var oldJob Job
+			eh.avoidErr(func() {
 				eh.err = json.Unmarshal(oldJob_b, &oldJob)
-				//				if err != nil {
-				//					c.AbortWithError(http.StatusBadRequest, err)
-				//					return
-				//				}
 			})
 
 			if job.Id != oldJob.Id {
 				oldNode := &oldJob.Root
-				eh.avoidErr(func() /*error*/ {
-					//		cmdRes :=
+				eh.avoidErr(func() {
 					eh.err = oldNode.ProcessTree()
 				})
 
-				//				jobFName := cmdName + "-" + jobName + ".cgs"
-				//				jobFPath := filepath.Join(cmdDir, jobFName)
 				oldJobFName := jobFName + "." + oldJob.Id
 				oldJobFDir := filepath.Join(cmdDir, jobName)
 				os.MkdirAll(oldJobFDir, 0777)
 				oldJobFPath := filepath.Join(oldJobFDir, oldJobFName)
-				eh.avoidErr(func() /*error*/ {
-					//		cmdRes :=
+				eh.avoidErr(func() {
 					eh.err = os.Rename(jobFPath, oldJobFPath)
 				})
 			}
 		}
 
 		var node_ijb []byte
-		eh.avoidErr(func() /*error*/ {
+		eh.avoidErr(func() {
 			node_ijb, eh.err = json.MarshalIndent(job, "", "  ")
 		})
-		msg2 := fmt.Sprintf(" MarshalIndent /job/%s: %d bytes ... ", cmd_s, len(node_ijb))
+		msg2 := fmt.Sprintf("MarshalIndent /job/%s: %d bytes ...",
+			cmd_s, len(node_ijb))
 		fmt.Println(msg2)
 		//		job.Root.CmdLet += msg2
 
-		eh.avoidErr(func() /*error*/ {
+		eh.avoidErr(func() {
 			eh.err = ioutil.WriteFile(jobFPath, node_ijb, 0777)
 		})
 
-		//		if eh.hasErr(func( /*err error*/ ) {
-		//			c.AbortWithError(http.StatusBadRequest, eh.err)
-		//		}) {
-		//			return
-		//		}
-
-		//		fnames_l, err := filepath.Glob(jobFName + "*.json") // + "-latest.json")
-		//		if err != nil {
-		//			c.AbortWithError(http.StatusBadRequest, err)
-		//			return
-		//		}
-		//		if len(fnames_l) == 0 {
-		//			jobFName = jobFName + ".json"
-
-		//			node_ijb, err := json.MarshalIndent(node, "", "  ")
-		//			if err != nil {
-		//				c.AbortWithError(http.StatusBadRequest, err)
-		//				return
-		//			}
-
-		//		}
-
-		eh.avoidErr(func() /*error*/ {
+		eh.avoidErr(func() {
 			res := gin.H{
-				"id":  job.Id,          //--hex.EncodeToString(h.Sum(nil)),
-				"cmd": job.Root.CmdLet, //--node.ProcessTree(), //--  "bla",
+				"id":  job.Id,
+				"cmd": job.Root.CmdLet,
 			}
 			c.JSON(http.StatusCreated, res)
 		})
 
-		//		res := gin.H{
-		//			"id":  id_s,   //--hex.EncodeToString(h.Sum(nil)),
-		//			"cmd": cmdRes, //--node.ProcessTree(), //--  "bla",
-		//		}
-		//		c.JSON(http.StatusCreated, res)
-
-		/*if*/ eh.hasErr(func( /*err error*/ ) {
+		eh.hasErr(func() {
 			c.AbortWithError(http.StatusBadRequest, eh.err)
-		}) /*{
-			//			return
-		}*/
+		})
 	})
 
 	router.GET("/ping", func(c *gin.Context) {
@@ -317,7 +245,6 @@ func (eh *errHandler_T) ServeGin(port int, baseDir string) error {
 		time.Sleep(300 * time.Millisecond)
 		err := webbrowser.Open(url)
 		if err != nil {
-			//			return err
 			log.Printf("FAILED to open url in browser: %s\n", err)
 		}
 	}()
