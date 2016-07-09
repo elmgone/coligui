@@ -7,7 +7,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	//	"io"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -304,15 +303,15 @@ func (eh *errHandler_T) handleJobPost(baseDir string, c *gin.Context) error {
 #
 cat <<EOYD | less
 #
-# begin:  CoLiGui job configuration for:  %[1]s - %[2]s
+# begin:  CoLiGui job configuration for:  %[1]s - %[2]s  @ %[4]v
 #
 
 %[3]s
 #
-# end:  CoLiGui job configuration for:  %[1]s - %[2]s
+# end:  CoLiGui job configuration for:  %[1]s - %[2]s  @ %[4]v
 #
 EOYD
-`, job.Root.Label, job.Name, job2_yb))
+`, job.Root.Label, job.Name, job2_yb, time.Now()))
 
 	cmdName := strings.TrimSpace(strings.ToLower(job.Root.Label))
 	cmdDir := filepath.Join(baseDir, cmdName)

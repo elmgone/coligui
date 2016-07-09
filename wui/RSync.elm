@@ -104,7 +104,7 @@ update msg model =
           data = W.treeToJson 2 model.root
         in
             ( { model | output = data }
-            , saveJob model.root
+            , saveJob model
             )
 --------------------------------------}
 
@@ -142,12 +142,12 @@ decodeSaved =
     ("yid"  := JD.string)
     ("cmd" := JD.string)
 
-saveJob : W.Node -> Cmd Msg
-saveJob node =
+saveJob : Model -> Cmd Msg
+saveJob model =
   let
     url = "/job/RSync"
     --body_s = W.treeToJson 2 node
-    body_s = W.jobAsJson 2 node
+    body_s = W.jobAsJson 2 model.cfgName model.root
     postCall = Http.post decodeSaved url (Http.string body_s)
   in
     Task.perform SaveFail SaveSucceed postCall

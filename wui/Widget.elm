@@ -129,13 +129,6 @@ aSwitch id label kidsList =
   in
     Node (id ++ "-SW") label "a switch" (Switch fkid) (KidsList kidsList) SelectedKidFmtr
 
---aBool : Id -> String -> Bool -> String -> String -> Node
---aBool id label flag cmdTrue cmdFalse =
---  Node (id ++ "_B") label (BoolValue flag) (KidsList []) (BoolFmtr cmdTrue cmdFalse)
-
---aBool : Id -> String -> String -> Bool -> String -> Node
---aBool id label descr flag cmdTrue =
---  Node (id ++ "_B") label descr (BoolValue flag) (KidsList []) (BoolFmtr cmdTrue "")
 aBool : Id -> String -> String -> String -> Node
 aBool id label descr cmdTrue =
   Node (id ++ "_B") label descr (BoolValue False) (KidsList []) (BoolFmtr cmdTrue "")
@@ -225,20 +218,12 @@ jsonValueRec recurse node =
   in
     rootNode
 
-jobAsJson : Int -> Node -> String
-jobAsJson indent node =
+jobAsJson : Int -> String -> Node -> String
+jobAsJson indent cfgName node =
   let
     rootNode = jsonValueRec True node
-
---  Job struct {
---    Id   string
---    Name string
---    Root Node
---  }
-
     job = JE.object ( [
-        ( "name",          JE.string "hra" )
---    ,   ( "root",          JE.object rootNode )
+        ( "name",          JE.string cfgName )
     ,   ( "root",          rootNode )
     ] )
   in
