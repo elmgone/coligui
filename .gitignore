@@ -33,3 +33,4 @@ wui.ego
 # tmp files
 *~
 *.old
+.git.vendor
