@@ -111,136 +111,26 @@ func (node *Node) WalkTree(cnf func(*Node) error) error {
 
 func ServeGin(port int) error {
 	baseDir := "/tmp"
-	eh := errHandler_T{}
-	return eh.ServeGin(port, baseDir)
+	//	eh := errHandler_T{}
+	return /*eh.*/ ServeGinX(port, baseDir)
 }
 
-func (eh *errHandler_T) ServeGin(port int, baseDir string) error {
+func /*(eh *errHandler_T)*/ ServeGinX(port int, baseDir string) error {
 	router := gin.Default()
 
 	router.GET("/", func(c *gin.Context) {
 		wui.WriteWuiHtml(c.Writer)
 	})
 
-	router.POST("/job/:cmd", func(c *gin.Context) {
+	router.POST("/jobs/:cmd", func(c *gin.Context) {
+		eh := errHandler_T{}
 		eh.handleJobPost(baseDir, c)
 	})
 
-	router.GET("/job/:cmd", func(c *gin.Context) {
-		eh.handleJobPost(baseDir, c)
+	router.GET("/jobs", func(c *gin.Context) {
+		eh := errHandler_T{}
+		eh.handleJobList(baseDir, c)
 	})
-
-	//	router.POST("/job/:cmd", func(c *gin.Context) {
-	//		cmd_s := c.Param("cmd")
-	//		//		id_s := c.Param("id")
-
-	//	router.POST("/job/:cmd", eh.handleJobPost(baseDir, c))
-
-	//	router.POST("/job/:cmd", func(c *gin.Context) {
-	//		cmd_s := c.Param("cmd")
-	//		//		id_s := c.Param("id")
-
-	//		//... parse JSON in post body
-	//		defer c.Request.Body.Close()
-
-	//		var body_b []byte
-	//		eh.safe(func() {
-	//			body_b, eh.err = ioutil.ReadAll(c.Request.Body)
-	//		})
-	//		msg1 := fmt.Sprintf("POSTed to /job/%s: %d bytes ...", cmd_s, len(body_b))
-	//		fmt.Println(msg1)
-
-	//		var job Job
-	//		eh.safe(func() {
-	//			eh.err = json.Unmarshal(body_b, &job)
-	//		})
-	//		eh.safe(func() {
-	//			eh.err = job.Check()
-	//			//		fmt.Printf("got '%s': '''%s''' from %#v\n", cmd_s, cmdRes, node)
-	//			//			fmt.Printf("got '%s': %#v: %v\n", cmd_s, job, eh.err)
-	//			fmt.Printf("got '%s': err=%v\n", cmd_s, eh.err)
-	//		})
-
-	//		var job_b []byte
-	//		eh.safe(func() {
-	//			//			job.Root.CmdLet += msg1
-	//			job_b, eh.err = json.Marshal(job)
-	//		})
-
-	//		h := sha1.New()
-	//		eh.safe(func() {
-	//			_ /*n*/, eh.err = h.Write(job_b)
-	//		})
-	//		if eh.hasErr(func() {
-	//			c.AbortWithError(http.StatusBadRequest, eh.err)
-	//		}) {
-	//			return
-	//		}
-
-	//		job.Id = hex.EncodeToString(h.Sum(nil))
-
-	//		cmdName := strings.TrimSpace(strings.ToLower(job.Root.Label))
-	//		cmdDir := filepath.Join(baseDir, cmdName)
-	//		os.MkdirAll(cmdDir, 0777)
-
-	//		jobName := strings.TrimSpace(strings.ToLower(job.Name))
-
-	//		jobFName := cmdName + "-" + jobName + ".cgs"
-	//		jobFPath := filepath.Join(cmdDir, jobFName)
-
-	//		fInfo, err := os.Stat(jobFPath)
-	//		if err == nil && !fInfo.IsDir() {
-	//			var oldJob_b []byte
-	//			eh.safe(func() {
-	//				oldJob_b, eh.err = ioutil.ReadFile(jobFPath)
-	//			})
-
-	//			var oldJob Job
-	//			eh.safe(func() {
-	//				eh.err = json.Unmarshal(oldJob_b, &oldJob)
-	//			})
-
-	//			if job.Id != oldJob.Id {
-	//				oldNode := &oldJob.Root
-	//				eh.safe(func() {
-	//					eh.err = oldNode.ProcessTree()
-	//				})
-
-	//				oldJobFName := jobFName + "." + oldJob.Id
-	//				oldJobFDir := filepath.Join(cmdDir, jobName)
-	//				os.MkdirAll(oldJobFDir, 0777)
-	//				oldJobFPath := filepath.Join(oldJobFDir, oldJobFName)
-	//				eh.safe(func() {
-	//					eh.err = os.Rename(jobFPath, oldJobFPath)
-	//				})
-	//			}
-	//		}
-
-	//		var node_ijb []byte
-	//		eh.safe(func() {
-	//			node_ijb, eh.err = json.MarshalIndent(job, "", "  ")
-	//		})
-	//		msg2 := fmt.Sprintf("MarshalIndent /job/%s: %d bytes ...",
-	//			cmd_s, len(node_ijb))
-	//		fmt.Println(msg2)
-	//		//		job.Root.CmdLet += msg2
-
-	//		eh.safe(func() {
-	//			eh.err = ioutil.WriteFile(jobFPath, node_ijb, 0777)
-	//		})
-
-	//		eh.safe(func() {
-	//			res := gin.H{
-	//				"id":  job.Id,
-	//				"cmd": job.Root.CmdLet,
-	//			}
-	//			c.JSON(http.StatusCreated, res)
-	//		})
-
-	//		eh.hasErr(func() {
-	//			c.AbortWithError(http.StatusBadRequest, eh.err)
-	//		})
-	//	})
 
 	router.GET("/ping", func(c *gin.Context) {
 		c.JSON(200, gin.H{
@@ -264,6 +154,85 @@ func (eh *errHandler_T) ServeGin(port int, baseDir string) error {
 	}()
 
 	return router.Run(port_s) // listen and server on 0.0.0.0:8080
+}
+
+func (eh *errHandler_T) handleJobList(baseDir string, c *gin.Context) error {
+	//	cmdName := c.Param("cmd")
+	//		id_s := c.Param("id")
+
+	//... parse JSON in post body
+	defer c.Request.Body.Close()
+
+	eh.safe(func() {
+		res := gin.H{
+			//			"Job": //-[]gin.H{
+			//			gin.H{
+			//				"name": "hra",
+			//				"id":   "x1",
+			//				"versions": []string{
+			//					"v1", "v2", "v3",
+			//				},
+			//			},
+
+			"JobType": gin.H{
+				"Name": "RSync",
+				"Id":   "x0",
+				"Jobs": []gin.H{
+					gin.H{
+						"name": "hra",
+						"id":   "x1",
+						"versions": []string{
+							"v1", "v2", "v3",
+						},
+					},
+					gin.H{
+						"name": "kati",
+						"id":   "x2",
+						"versions": []string{
+							"v1", "v2", "v3",
+						},
+					},
+					gin.H{
+						"name": "default",
+						"id":   "x3",
+						"versions": []string{
+							"v1", "v2", "v3",
+						},
+					},
+				},
+			},
+			//				"id-x1": "hra",
+			//				"id-x2": "kati",
+			//				"id-x3": "def",
+			//			},
+			//			"jid":   job.JsonSha1,
+			//			"yid":   job.YamlSha1,
+			//			"cmd":   cmdMsg, // job.Root.CmdLet,
+		}
+		c.JSON(http.StatusCreated, res)
+	})
+
+	//	eh.ifErr(func() { c.AbortWithError(http.StatusBadRequest, eh.err) })
+	//	return eh.err
+
+	//	eh.safe(func() {
+	//		eh.forAllJobs(
+	//			baseDir, cmdName, "*", //-- jobName,
+	//			"", //	"."+cs, // toIgnore,
+
+	//			// cmdDir, cmdName, jobName
+	//			func(oldJobFPath string, oldJob_b []byte) error {
+	//				fmt.Printf("found: '%s': %d bytes\n",
+	//					oldJobFPath, len(oldJob_b),
+	//				)
+	//				//				eh.renameToBak(cmdDir, cmdName, jobName, oldJobFPath, oldJob_b)
+	//				return eh.err
+	//			},
+	//		)
+	//	})
+
+	eh.ifErr(func() { c.AbortWithError(http.StatusBadRequest, eh.err) })
+	return eh.err
 }
 
 func (eh *errHandler_T) handleJobPost(baseDir string, c *gin.Context) error {
@@ -424,33 +393,6 @@ func (eh *errHandler_T) forAllJobs(
 			eh.safe(func() { eh.err = handleFile(oldJobFPath, oldJob_b) })
 		}
 	}
-}
-
-func (eh *errHandler_T) handleJobList(baseDir string, c *gin.Context) error {
-	cmdName := c.Param("cmd")
-	//		id_s := c.Param("id")
-
-	//... parse JSON in post body
-	defer c.Request.Body.Close()
-
-	eh.safe(func() {
-		eh.forAllJobs(
-			baseDir, cmdName, "*", //-- jobName,
-			"", //	"."+cs, // toIgnore,
-
-			// cmdDir, cmdName, jobName
-			func(oldJobFPath string, oldJob_b []byte) error {
-				fmt.Printf("found: '%s': %d bytes\n",
-					oldJobFPath, len(oldJob_b),
-				)
-				//				eh.renameToBak(cmdDir, cmdName, jobName, oldJobFPath, oldJob_b)
-				return eh.err
-			},
-		)
-	})
-
-	eh.ifErr(func() { c.AbortWithError(http.StatusBadRequest, eh.err) })
-	return eh.err
 }
 
 func (eh *errHandler_T) hashSha1(

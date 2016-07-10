@@ -28,6 +28,7 @@ module JobType exposing (..)
   )
 -------------------------------------------------------}
 
+import Widget as W exposing (..)
 
 import Html exposing (..)
 import Html.Events exposing (..)
@@ -48,7 +49,16 @@ type alias Model =
     { jobs : List Job
     , id   : String
     , name : String
+    --, node : W.Node
     }
+
+init : Model
+init =
+  Model [
+    Job [] "x1" "default"
+  , Job [] "x2" "hra"
+  , Job [] "x3" "kati"
+  ] "jt5" "JobTypes"
 
 {----------------------------------------------
 type alias X1 =
@@ -141,14 +151,15 @@ update msg model =
 
 view : Model -> Html Msg
 view model =
-  div [] [
-    h3 [] [ text model.name ]
-  , select []
-      ( List.map (\ j -> option [] [ text j.name ] ) model.jobs )
+  table [] [ tr [] [
+--    label [] [ text model.name ]
+    td [] [ label [] [ text "Configuration" ] ]
+  , td [] [ select []
+      ( List.map (\ j -> option [] [ text j.name ] ) model.jobs ) ]
     {--------------------
     [
       option [] []
     , option [] []
     ]
     --------------------}
-  ]
+  ] ]

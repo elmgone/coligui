@@ -14,10 +14,13 @@
 
 module RSync exposing (Model, Msg, init, update, view)
 
-import Widget as W exposing (
+import Widget as W
+{----------------------------------------------------------
+  exposing (
     aRoot, aVertical, aHorizontal, aSwitch, aBool, aString
   , fmtList   --, fmtById
   )
+----------------------------------------------------------}
 
 import RSyncConfig exposing (..)
 
@@ -70,9 +73,9 @@ type alias Model =
 init : (Model, Cmd Msg)
 init =
   let
-    ( root, nodes ) = aRoot "RSync" [
+    ( root, nodes ) = W.aRoot "RSync" [
       RSyncConfig.init
-    ] (fmtList "rsync {{}} # ..." " ")
+    ] (W.fmtList "rsync {{}} # ..." " ")
   in
     ( Model "" "default" "" False root
     , Cmd.none )
@@ -146,7 +149,7 @@ decodeSaved =
 saveJob : Model -> Cmd Msg
 saveJob model =
   let
-    url = "/job/RSync"
+    url = "/jobs/RSync"
     --body_s = W.treeToJson 2 node
     body_s = W.jobAsJson 2 model.cfgName model.root
     postCall = Http.post decodeSaved url (Http.string body_s)
@@ -181,7 +184,6 @@ view model =
     jobNameEmpty = String.isEmpty ( String.trim jobName )
   in
     div [] [
---      Html.App.map CallWidget (W.view model.root)
       h2 [] [ text rootName ]
     , table [] [ tr [] [
         td [] [ label [] [ text "Configuration" ] ]

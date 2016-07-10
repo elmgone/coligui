@@ -23,7 +23,7 @@ module Widget exposing (
   , treeToJson, nodeToJson  --, toJson
   , jobAsJson
 
-  , nodeAsHtmlLI, cmdOf
+  , nodeAsHtmlLI, cmdOf, kidsOf
   )
 
 
@@ -155,15 +155,15 @@ validateFormatForParam cmdFmt =
       else
         "!! format MUST contain '{{}}' !!"
 
-kids : Node -> List Node
-kids node =
+kidsOf : Node -> List Node
+kidsOf node =
   case node.kids of
     KidsList kids_l ->
       kids_l
 
 flatKidsList : Node -> List Node
 flatKidsList node =
-  List.foldl List.append [] (List.map flatKidsList (kids node))
+  List.foldl List.append [] (List.map flatKidsList (kidsOf node))
 
 treeToJson : Int -> Node -> String
 treeToJson indent node =
@@ -198,7 +198,7 @@ jsonValueRec recurse node =
 
     cmdlet = cmdOf node
 
-    kids_l = kids node
+    kids_l = kidsOf node
     extra =
       if recurse && List.length kids_l > 0 then
         [ ( "kids", JE.list ( List.map (jsonValueRec recurse) kids_l ) ) ]
@@ -238,7 +238,7 @@ nodeAsHtmlLI node =
 
 kidsAsUL : Node -> Html Msg
 kidsAsUL node =
-      ul [] ( List.map (\ k -> nodeAsHtmlLI k) ( kids node ) )
+      ul [] ( List.map (\ k -> nodeAsHtmlLI k) ( kidsOf node ) )
 
 
 cmdOf : Node -> String
@@ -259,7 +259,7 @@ cmdOf node =
 
     cmdListOfKids : Node -> List String
     cmdListOfKids node =
-      List.map (\ kid -> cmdOf kid) (kids node)
+      List.map (\ kid -> cmdOf kid) (kidsOf node)
 
     cmdsOfKids : String -> Node -> String
     cmdsOfKids listSep node =
@@ -267,7 +267,7 @@ cmdOf node =
 
     kidsCmdletsByIdList : Node -> List (Id, String)
     kidsCmdletsByIdList node =
-      List.map (\ k -> (k.id, cmdOf k)) (kids node)
+      List.map (\ k -> (k.id, cmdOf k)) (kidsOf node)
 
     kidsCmdletsByIdDict : Node -> Dict.Dict Id String
     kidsCmdletsByIdDict node =
@@ -336,7 +336,7 @@ cmdOf node =
 getSelectedKid : Id -> Node -> Maybe Node
 getSelectedKid sid node =
   -- optSelectedKid = List.head ( List.filter (\ kid -> kid.id == sid ) kids_l )
-  List.head ( List.filter (\ kid -> kid.id == sid ) (kids node) )
+  List.head ( List.filter (\ kid -> kid.id == sid ) (kidsOf node) )
 
 
 {----------------------------------------
@@ -383,7 +383,7 @@ mapUpdate : (Node -> (Node, Cmd a)) -> Node -> (Node, Cmd a)
 mapUpdate f node =
   let
     ( newNode, cmd )  = f node
-    ( newKids, cmds ) = List.unzip ( List.map (mapUpdate f) (kids node) )
+    ( newKids, cmds ) = List.unzip ( List.map (mapUpdate f) (kidsOf node) )
   in
     ( { newNode | kids = KidsList newKids }
     , Cmd.batch ( cmd :: cmds ) )
@@ -397,7 +397,7 @@ mapUpdate f node =
 viewRoot : Node -> ( String, Html Msg )
 viewRoot node =
   let
-    kidsCont_l = List.map view ( kids node )
+    kidsCont_l = List.map view ( kidsOf node )
     cont = div [] kidsCont_l
   in
     ( node.label, cont)
@@ -416,7 +416,7 @@ view node =
     RootCmd ->
       div [] ( [
         h2 [] [ a [ href "http://localhost:33333" ] [ text node.label ] ]
-      ] ++ ( List.map view ( kids node ) ) )
+      ] ++ ( List.map view ( kidsOf node ) ) )
 
     Group isVertical ->
       let
@@ -451,7 +451,7 @@ view node =
     Switch sid ->
       {-------------------------------------------}
       let
-        kids_l = kids node
+        kids_l = kidsOf node
         kidsIdsAndLabels_l = List.map (\ k -> (k.id, k.label) ) kids_l
         mkRadioTR (id, lbl) =
           tr [] [
@@ -503,7 +503,7 @@ mkLabel showLabel node =
 --kidsListOfTuples : Node -> List (Node, Html Msg)
 kidsListOfTuples : Node -> List (Html Msg, Node, Bool)
 kidsListOfTuples node =
-  List.map viewTuple ( kids node )
+  List.map viewTuple ( kidsOf node )
 
 --kidsTupleOfLists : Node -> (List String, List (Html Msg))
 kidsTupleOfLists : Node -> (List (Html Msg), List (Html Msg))

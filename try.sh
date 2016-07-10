@@ -26,7 +26,7 @@ else
 fi
 
 cd wui &&
-	elm make RSync.elm &&
+	elm make Main.elm &&
 	firefox index.html &&
 	cd .. &&
 	$BLD &&
