@@ -47,8 +47,8 @@ main =
 
 type alias Model =
   { id           : String
-  , cfgName      : String
-  , tmpCfgName   : String
+--  , cfgName      : String
+--  , tmpCfgName   : String
   , output       : String
   , debug        : Bool
 

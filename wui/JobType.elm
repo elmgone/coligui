@@ -50,6 +50,8 @@ type alias Model =
     , id   : String
     , name : String
     --, node : W.Node
+    , cfgName      : String
+    , tmpCfgName   : String
     }
 
 init : Model
@@ -59,7 +61,7 @@ init =
   , Job [] "x1" "default"
   , Job [] "x2" "hra"
   , Job [] "x3" "kati"
-  ] "jt5" "JobTypes"
+  ] "jt5" "JobTypes" "" "default"
 
 {----------------------------------------------
 type alias X1 =
