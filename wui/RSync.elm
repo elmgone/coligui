@@ -12,7 +12,7 @@
 -- See the License for the specific language governing permissions and
 -- limitations under the License.
 
-module RSync exposing (Model, Msg, init, update, view)
+module RSync exposing (Model, Msg, init, update, viewHead, viewBody)
 
 import Widget as W
 {----------------------------------------------------------
@@ -46,10 +46,11 @@ main =
 -- MODEL
 
 type alias Model =
-  { id        : String
-  , cfgName   : String
-  , output    : String
-  , debug     : Bool
+  { id           : String
+  , cfgName      : String
+  , tmpCfgName   : String
+  , output       : String
+  , debug        : Bool
 
   -- widgets
   , root      : W.Node
@@ -77,7 +78,7 @@ init =
       RSyncConfig.init
     ] (W.fmtList "rsync {{}} # ..." " ")
   in
-    ( Model "" "default" "" False root
+    ( Model "" "" "default" "" False root
     , Cmd.none )
 
 
@@ -88,8 +89,9 @@ type Msg =
     | Save
     | SaveSucceed SaveResult
     | SaveFail Http.Error
-    | ToggleDebug Bool
+--    | ToggleDebug Bool
     | EditCfgName String
+    | SetCfgName String
 
 update : Msg -> Model -> (Model, Cmd Msg)
 update msg model =
@@ -106,8 +108,17 @@ update msg model =
       Save ->
         let
           data = W.treeToJson 2 model.root
+          newModel = { model
+              | output = data
+              , cfgName = model.tmpCfgName
+              }
         in
-            ( { model | output = data }
+          ( newModel, saveJob newModel )
+{--------------------------------------
+            ( { model
+              | output = data
+              ,
+              }
             , saveJob model
             )
 --------------------------------------}
@@ -122,10 +133,15 @@ update msg model =
             , Cmd.none
             )
 
-      ToggleDebug dbg ->
-            ( { model | debug = dbg }, Cmd.none )
+--      ToggleDebug dbg ->
+  --          ( { model | debug = dbg }, Cmd.none )
 
       EditCfgName cName ->
+            ( { model | tmpCfgName = cName }
+            , Cmd.none
+            )
+
+      SetCfgName cName ->
             ( { model | cfgName = cName }
             , Cmd.none
             )
@@ -163,11 +179,78 @@ saveJob model =
 view : Model -> Html Msg
 view model =
   let
+    v = ""
+  in
+    div [] [
+{------------------------------------------------------------}
+      h2 [] [ text "RSync" ]
+    , viewHead "XxX" model True
+    , viewBody model
+    ]
+
+viewBody : Model -> Html Msg
+viewBody model =
+  let
+    (n, v) = W.viewRoot model.root
+  in
+    Html.App.map CallWidget v
+
+{------------------------------------------------------------
+  let
+    ( rootName, rootView ) = W.viewRoot model.root
+    jobName = model.cfgName
+    jobNameEmpty = String.isEmpty ( String.trim jobName )
+  in
+    div [] [
+      table [] [ tr [] [
+        td [] [ label [] [ text "Configuration" ] ]
+      , td [] [ input [
+                  type' "text"
+                , value model.cfgName
+                , onInput EditCfgName
+                ] [] ]
+      , td [] [ button [ onClick Save, disabled jobNameEmpty ] [ text "Save" ] ]
+      ] ]
+    , Html.App.map CallWidget rootView
+    , h3 [] [ text "Output" ]
+    , text model.output
+--    , dbg
+    ]
+------------------------------------------------------------}
+
+
+
+viewHead : String -> Model -> Bool -> Html Msg
+viewHead labelText model allowToSave =
+  let
+      cfgNameIsEmpty = String.isEmpty ( String.trim model.cfgName )
+      tmpCfgNameIsEmpty = String.isEmpty ( String.trim model.tmpCfgName )
+      enableSave = allowToSave && ( not (
+        cfgNameIsEmpty && tmpCfgNameIsEmpty
+      ) )
+  in
+      table [] [ tr [] [
+        td [] [ button [
+                  onClick Save
+--                , disabled cfgNameIsEmpty
+                , disabled (not enableSave)
+                ] [ text "Save" ] ]
+      , td [] [ label [] [ text labelText ] ]
+      , td [] [ input [
+                  type' "text"
+                , value model.tmpCfgName
+                , onInput EditCfgName
+                ] [] ]
+      ] ]
+
+{------------------------------------------------------------
+  let
     wTreeLI w =
       if model.debug then
         Html.App.map CallWidget (W.nodeAsHtmlLI w)
       else
         div [] []
+
     dbg =
       div [] [
         h4 [] [ text "debug" ]
@@ -184,8 +267,10 @@ view model =
     jobNameEmpty = String.isEmpty ( String.trim jobName )
   in
     div [] [
+{------------------------------------------------------------
       h2 [] [ text rootName ]
-    , table [] [ tr [] [
+    ,--}
+      table [] [ tr [] [
         td [] [ label [] [ text "Configuration" ] ]
       , td [] [ input [
                   type' "text"
@@ -197,8 +282,58 @@ view model =
     , Html.App.map CallWidget rootView
     , h3 [] [ text "Output" ]
     , text model.output
-    , dbg
+--    , dbg
     ]
+------------------------------------------------------------}
+
+
+
+{------------------------------------------------------------
+view : Model -> Html Msg
+view model =
+  let
+{------------------------------------------------------------
+    wTreeLI w =
+      if model.debug then
+        Html.App.map CallWidget (W.nodeAsHtmlLI w)
+      else
+        div [] []
+
+    dbg =
+      div [] [
+        h4 [] [ text "debug" ]
+      , ul [] ( [
+          li [] [ text (W.cmdOf model.root) ]
+        , li [] [
+            label [] [ text "extensive" ]
+          , input [ type' "checkbox", onCheck ToggleDebug ] []
+          ]
+        ] ++ [ wTreeLI model.root ] )
+      ]
+------------------------------------------------------------}
+    ( rootName, rootView ) = W.viewRoot model.root
+    jobName = model.cfgName
+    jobNameEmpty = String.isEmpty ( String.trim jobName )
+  in
+    div [] [
+{------------------------------------------------------------
+      h2 [] [ text rootName ]
+    ,--}
+      table [] [ tr [] [
+        td [] [ label [] [ text "Configuration" ] ]
+      , td [] [ input [
+                  type' "text"
+                , value model.cfgName
+                , onInput EditCfgName
+                ] [] ]
+      , td [] [ button [ onClick Save, disabled jobNameEmpty ] [ text "Save" ] ]
+      ] ]
+    , Html.App.map CallWidget rootView
+    , h3 [] [ text "Output" ]
+    , text model.output
+--    , dbg
+    ]
+------------------------------------------------------------}
 
 
 -- SUBSCRIPTIONS

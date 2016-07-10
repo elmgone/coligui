@@ -48,7 +48,9 @@ type alias Model =
 
   -- widgets
   , jobTypes  : JobType.Model
-  , rootNode  : W.Node
+--  , rootNode  : W.Node
+  , rsync     : RSync.Model
+  , allowSave : Bool
   }
 
 init : (Model, Cmd Msg)
@@ -62,14 +64,16 @@ init =
 --    ( Model "" "default" "" False root
     ( Model "" False
       jt
-      ( fst RSync.init ).root
+      --( fst RSync.init ).root
+      (fst RSync.init)
+      True
     , Cmd.none )
 
 
 -- UPDATE
 
 type Msg =
-    CallWidget  W.Msg
+    CallRSync   RSync.Msg
   | CallJobType JobType.Msg
 --    | Save
 --    | SaveSucceed SaveResult
@@ -80,12 +84,12 @@ type Msg =
 update : Msg -> Model -> (Model, Cmd Msg)
 update msg model =
     case msg of
-      CallWidget wMsg ->
+      CallRSync rsMsg ->
         let
-          ( newRoot, cmd ) = W.update wMsg model.rootNode
+          ( newRoot, cmd ) = RSync.update rsMsg model.rsync
         in
-          ( { model | rootNode = newRoot }
-          , Cmd.map CallWidget cmd
+          ( { model | rsync = newRoot }
+          , Cmd.map CallRSync cmd
           )
       CallJobType jtMsg ->
         let
@@ -102,13 +106,43 @@ update msg model =
 view : Model -> Html Msg
 view model =
   let
-    ( rootName, rootView ) = W.viewRoot model.rootNode
+    --( rootName, rootView ) = W.viewRoot model.rootNode
     jt = JobType.view model.jobTypes
+
+    rsyncHead = RSync.viewHead "Pick Name" model.rsync model.allowSave
+
+    wTreeLI w =
+      {----------------------------------------------------------
+      if model.debug then
+        Html.App.map CallRSync (W.nodeAsHtmlLI w)
+      else
+      ----------------------------------------------------------}
+        div [] []
+
+    dbg =
+      div [] [
+      {----------------------------------------------------------
+        h4 [] [ text "debug" ]
+      , ul [] ( [
+          li [] [ text (W.cmdOf model.rootNode) ]
+        , li [] [
+            label [] [ text "extensive" ]
+          , input [ type' "checkbox", onCheck ToggleDebug ] []
+          ]
+        ] ++ [ wTreeLI model.rootNode ] )
+      ----------------------------------------------------------}
+      ]
   in
     div [] [
-      h2 [] [ text rootName ]
-    , Html.App.map CallJobType jt
-    , Html.App.map CallWidget rootView
+      h2 [] [ text "RSync" ]
+    , table [] [ tr [] [
+          td [] [ Html.App.map CallJobType jt ]
+        --, td [] [ Html.App.map CallRSync (RSync.viewHead "Pick Name" model.rsync) ]
+        , td [] [ Html.App.map CallRSync rsyncHead ]
+        ]
+      ]
+    , Html.App.map CallRSync (RSync.viewBody model.rsync)
+    , dbg
     ]
 
   {-----------------------------------------------------------------
