@@ -3,21 +3,18 @@
 # generate wui.ego out of index.html
 #
 
-# if which eg.sh > /dev/null; then
-# if which eg > /dev/null; then
-# 	EG=$(which eg.sh)
-# 	EG=$(which eg)
-# fi
-
 # set -x
 
-# $EG
+# TITLE="RSync - powered by (c) CoLiGUI"
+# TITLE="RSync - via CoLiGUI"
+TITLE="RSync"
+
 elm package install --yes                                        || exit 10
-# $EG
 elm make --yes "$@"                                              || exit 20
-# echo "<%! func WriteWuiHtml( w io.Writer ) error %>"  >  wui.ego || exit 30
-cat index.html                                        >  wui.ego || exit 30
+
+cat index.html | sed -e \
+     "s:<title>Main</title>:<title>$TITLE</title>:"  >   wui.ego || exit 30
+
 echo                                                 >>  wui.ego || exit 40
 echo "<%! func WriteWuiHtml( w io.Writer ) error %>" >>  wui.ego || exit 50
-# $EG
 ego                                                              || exit 60
