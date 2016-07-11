@@ -87,7 +87,8 @@ view : Model -> Html Msg
 view model =
   -- Html.App.map ComboMsg ( ComboBox.view ComboMsg Success model.combo )
   table [] [ tr [] [
-    td [] [ ComboBox.viewButton ( text "TEST ! Action" ) success model.combo ]
+    td [] [ ComboBox.viewOption "--" success model.combo ]
+  , td [] [ ComboBox.viewButton ( text "TEST ! Action" ) success model.combo ]
   , td [] [ label [] [ text "Test: Pick new" ] ]
   , td [] [ Html.App.map ComboMsg ( ComboBox.viewField model.combo ) ]
   , td [] [ Html.App.map ComboMsg ( ComboBox.viewDbg model.combo ) ]

@@ -51,6 +51,7 @@ type alias Model =  -- onSuccess_F =
     , tmpField   : String
     --, entries    : List Entry
     , entries    : List String
+    --, neutralEntry : String
     , debug      : Bool
     }
 
@@ -67,7 +68,8 @@ type alias Entry
 --  Model label "" "default" [] True
 init : Model
 init =
-  Model "" "default" [] False   -- True
+  Model "" "default" [""]   -- ["-- new --"]    -- "-- new --"
+    False   -- True
 
 
 
@@ -129,17 +131,23 @@ update msg model =
       {-------------------------------------}
 
     Success str ->
-      {-------------------------------------
       let
+      {-------------------------------------
         nField =
           if model.field == "" then
             model.tmpField
             str
           else
             model.field
-      in
       -------------------------------------}
-        { model | field = str, tmpField = "" } ! []
+        nEntries =
+          str :: List.filter (\ e -> e /= str ) model.entries
+      in
+        { model
+        | field = str
+        , tmpField = ""
+        , entries = nEntries
+        } ! []
 
     ToggleDebug dbg ->
       { model | debug = dbg } ! []
@@ -148,32 +156,49 @@ update msg model =
 -- VIEW
 
 {------------------------------------------------------------------
-view : (msg -> Msg) -> msg -> Model -> Html Msg
-view msgMapper actionMsg model =
-  ---viewInput model.field
-  let
-    dbgStr =
-      if model.debug then
-        toString model
-      else
-        ""
-  in
-    {--------------------}
-    table [] [ tr [] ( [
-      td [] [ label [] [ text model.label ] ]
-  --  td [] [ label [] [ text "Configuration" ] ]
-    , td [] [ select []
-        ( List.map (\ j -> option [] [ text j.name ] ) model.entries ) ]
---    ] ++ ( viewField actionMsg model ) ++ [
-    , td [] [ viewButton (msgMapper actionMsg) model ]
-    , td [] [ viewField model ]
-    , td [] [ text dbgStr ]
-    ] ) ]
-    --------------------}
 ------------------------------------------------------------------}
 
 viewButton : Html msg -> (String -> msg) -> Model -> Html msg
 viewButton label actionMsg model =
+  let
+      fieldIsEmpty = String.isEmpty ( String.trim model.field )
+      tmpFieldNameIsEmpty = String.isEmpty ( String.trim model.tmpField )
+      enableSave = ---allowToSave &&
+      ( not (
+        fieldIsEmpty && tmpFieldNameIsEmpty
+      ) )
+      actionStr =
+        if fieldIsEmpty then
+          String.trim model.tmpField
+        else
+          String.trim model.field
+  in
+      button [
+                  -- onClick Action
+                  onClick ( actionMsg actionStr )
+--                  onClick ( model.onSuccess model.tmpField )
+--                , disabled cfgNameIsEmpty
+              --  , disabled (not enableSave)
+                ] [ label ]
+{-------------------------------------------------------------------
+-------------------------------------------------------------------}
+
+viewOption : String -> (String -> msg) -> Model -> Html msg
+viewOption neutralEntry selectMsg model =
+  let
+    txt s =
+      if s == "" then
+        neutralEntry
+      else
+        s
+    opt s =
+      option [ onClick (selectMsg s) ] [ text (txt s) ]
+  in
+    select []
+        -- ( List.map (\ s -> option [ onClick (selectMsg s) ] [ text s ] ) model.entries )
+        ( List.map opt model.entries )
+
+{-------------------------------------------------------------------
   let
       fieldIsEmpty = String.isEmpty ( String.trim model.field )
       tmpFieldNameIsEmpty = String.isEmpty ( String.trim model.tmpField )
@@ -189,24 +214,6 @@ viewButton label actionMsg model =
 --                , disabled cfgNameIsEmpty
               --  , disabled (not enableSave)
                 ] [ label ]
-{-------------------------------------------------------------------
-    --  table [] [ tr []
-      [
-        td [] [ button [
-                  -- onClick Action
-                  onClick actionMsg
---                  onClick ( model.onSuccess model.tmpField )
---                , disabled cfgNameIsEmpty
-              --  , disabled (not enableSave)
-                ] [ text "Save" ] ]
-      , td [] [ label [] [ text "Enter new" ] ]
-      , td [] [ input [
-                  type' "text"
-                , value model.tmpField
-                , onInput UpdateField
-                , disabled ( not fieldIsEmpty )
-                ] [] ]
-      ]
 -------------------------------------------------------------------}
 
 viewField : Model -> Html Msg
@@ -219,47 +226,21 @@ viewField model =
         fieldIsEmpty && tmpFieldNameIsEmpty
       ) )
   in
-    --  table [] [ tr []
-      -- div [] [
 {-------------------------------------------------------------------
-        td [] [ button [
-                  -- onClick Action
-                  onClick actionMsg
---                  onClick ( model.onSuccess model.tmpField )
---                , disabled cfgNameIsEmpty
-              --  , disabled (not enableSave)
-                ] [ text "Save" ] ]
 -------------------------------------------------------------------}
-       --- td [] [ label [] [ text "Enter new" ] ]
-      --- , td [] [ 
-      
                 input [
                   type' "text"
                 , value model.tmpField
                 , onInput UpdateField
                 , disabled ( not fieldIsEmpty )
-                ] [] -- ]
-      -- ]
-
-
-    {--------------------
-viewInput : String -> Html Msg
-viewInput str =
-  div
-    []  -- class "header" ]
-    [ label [] [ text model.label ]
-    , input
-        [ -- class "new-todo"
         --, placeholder "What needs to be done?"
-          autofocus True
-        , value str
         --, name "newTodo"
         --, onInput UpdateField
         --, onEnter Add
-        ]
-        []
-    ]
-    --------------------}
+          , autofocus True
+                ] []
+
+
 
 {--------------------------------------------------------------}
 viewDbg : Model -> Html Msg
@@ -282,25 +263,4 @@ viewDbg model =
       ]
 
 {--------------------------------------------------------------
-  let
-    wTreeLI w =
-      if model.debug then
---        Html.App.map CallWidget (W.nodeAsHtmlLI w)
-        W.nodeAsHtmlLI w
-      else
-        div [] []
-
-    dbg =
-      div [] [
-        label [] [ text "debug" ]
-      , ul [] ( [
-          li [] [ text (W.cmdOf model.root) ]
-        , li [] [
-            label [] [ text "extensive" ]
-          , input [ type' "checkbox", onCheck ToggleDebug ] []
-          ]
-        ] ++ [ wTreeLI model.root ] )
-      ]
-  in
-    dbg
 ------------------------------------------------------------}
