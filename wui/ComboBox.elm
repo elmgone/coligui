@@ -48,6 +48,7 @@ type alias Model =
     , field      : String
     , tmpField   : String
     , entries    : List Entry
+    , debug      : Bool
     }
 
 type alias Entry
@@ -58,7 +59,7 @@ type alias Entry
 
 init : String -> Model
 init label =
-  Model label "" "default" []
+  Model label "" "default" [] True
 
 
 -- UPDATE
@@ -67,6 +68,7 @@ type Msg
   = NoOp
   | UpdateField String
   | Action
+  | ToggleDebug Bool
   --| AddEntry Entry
   --| SetField String
 
@@ -93,31 +95,41 @@ update msg model =
       in
         { model | field = nField, tmpField = "" } ! []
 
+    ToggleDebug dbg ->
+      { model | debug = dbg } ! []
+
 
 -- VIEW
 
 view : Model -> Html Msg
 view model =
   ---viewInput model.field
-
+  let
+    dbgStr =
+      if model.debug then
+        toString model
+      else
+        ""
+  in
     {--------------------}
-  table [] [ tr [] ( [
-    td [] [ label [] [ text model.label ] ]
+    table [] [ tr [] ( [
+      td [] [ label [] [ text model.label ] ]
   --  td [] [ label [] [ text "Configuration" ] ]
-  , td [] [ select []
-      ( List.map (\ j -> option [] [ text j.name ] ) model.entries ) ]
-  ] ++ ( viewField model ) )
-   ]
+    , td [] [ select []
+        ( List.map (\ j -> option [] [ text j.name ] ) model.entries ) ]
+    ] ++ ( viewField model ) ++ [
+      td [] [ text dbgStr ]
+    ] ) ]
     --------------------}
 
 viewField : Model -> List ( Html Msg )
 viewField model =
   let
-      cfgNameIsEmpty = String.isEmpty ( String.trim model.field )
-      tmpCfgNameIsEmpty = String.isEmpty ( String.trim model.tmpField )
+      fieldIsEmpty = String.isEmpty ( String.trim model.field )
+      tmpFieldNameIsEmpty = String.isEmpty ( String.trim model.tmpField )
       enableSave = ---allowToSave &&
       ( not (
-        cfgNameIsEmpty && tmpCfgNameIsEmpty
+        fieldIsEmpty && tmpFieldNameIsEmpty
       ) )
   in
     --  table [] [ tr []
@@ -132,6 +144,7 @@ viewField model =
                   type' "text"
                 , value model.tmpField
                 , onInput UpdateField
+                , disabled ( not fieldIsEmpty )
                 ] [] ]
       ]
 
@@ -155,4 +168,28 @@ viewInput str =
     ]
     --------------------}
 
+{--------------------------------------------------------------
+viewDbg : Model -> Html Msg
+viewDbg model =
+  let
+    wTreeLI w =
+      if model.debug then
+--        Html.App.map CallWidget (W.nodeAsHtmlLI w)
+        W.nodeAsHtmlLI w
+      else
+        div [] []
 
+    dbg =
+      div [] [
+        h4 [] [ text "debug" ]
+      , ul [] ( [
+          li [] [ text (W.cmdOf model.root) ]
+        , li [] [
+            label [] [ text "extensive" ]
+          , input [ type' "checkbox", onCheck ToggleDebug ] []
+          ]
+        ] ++ [ wTreeLI model.root ] )
+      ]
+  in
+    dbg
+------------------------------------------------------------}
