@@ -23,12 +23,7 @@ import Html.Events exposing (..)
 import Html.Attributes exposing (..)
 import Html.App
 import Cmd.Extra
--- import Json.Encode                               --as JE
---import Json.Decode exposing ((:=))  --, (|:)) -- as JD
---import Json.Decode.Extra exposing ((|:)) -- as JD
---import Regex as RX   -- exposing (regex) as RX
 import String exposing (..)
---import Dict   -- as Di  --  exposing (..)
 
 
 main =
@@ -51,8 +46,7 @@ type alias Model =
 
 init : ( Model, Cmd Msg )
 init =
-    ( Model ( ComboBox.init    -- "Choose"  -- onSuccess
-    ), Cmd.none )
+    ( Model ComboBox.init, Cmd.none )
 
 
 -- UPDATE

@@ -21,12 +21,7 @@ import Html.Events exposing (..)
 import Html.Attributes exposing (..)
 import Html.App
 import Cmd.Extra
--- import Json.Encode                               --as JE
---import Json.Decode exposing ((:=))  --, (|:)) -- as JD
---import Json.Decode.Extra exposing ((|:)) -- as JD
---import Regex as RX   -- exposing (regex) as RX
 import String exposing (..)
---import Dict   -- as Di  --  exposing (..)
 
 
 {----------------------------------------------
@@ -43,36 +38,23 @@ main =
 
 -- MODEL
 
-type alias Model =  -- onSuccess_F =
-    {
---      label      : String
---    , 
-      field      : String
+type alias Model =
+    { field      : String
     , tmpField   : String
-    --, entries    : List Entry
     , entries    : List String
-    --, neutralEntry : String
     , debug      : Bool
     }
 
 {------------------------------
-type alias Entry
-  = {
-      name : String
-    , ref  : String
-    }
 ------------------------------}
 
---init : String -> Model
---init label =
---  Model label "" "default" [] True
 init : Model
 init =
-  Model "" "default" [""]   -- ["-- new --"]    -- "-- new --"
-    False   -- True
+  Model "" "default" [""] False
 
 
 
+{------------------------------
 {-| 
     The configuration for the ComboBox you embed.
     The `actionMessage` is an optional `Signal.Message` we will send when the user
@@ -89,6 +71,7 @@ type alias Config msg =
     --, body : Maybe (Html msg)
     --, footer : Maybe (Html msg)
     }
+------------------------------}
 
 
 
@@ -103,8 +86,6 @@ type Msg
   | Select String
   | Success String
   | ToggleDebug Bool
-  --| AddEntry Entry
-  --| SetField String
 
 
 -- How we update our Model on a given Msg?
@@ -113,7 +94,6 @@ update msg model =
   case msg of
     NoOp ->
       model ! []
-      -- ( model, Cmd.none )
 
     UpdateField str ->
       { model | tmpField = str, field = "" }
@@ -133,14 +113,6 @@ update msg model =
 
     Select str ->
       let
-      {-------------------------------------
-        nField =
-          if model.field == "" then
-            model.tmpField
-            str
-          else
-            model.field
-      -------------------------------------}
         nEntries = model.entries
           --- str :: List.filter (\ e -> e /= str ) model.entries
       in
@@ -152,14 +124,6 @@ update msg model =
 
     Success str ->
       let
-      {-------------------------------------
-        nField =
-          if model.field == "" then
-            model.tmpField
-            str
-          else
-            model.field
-      -------------------------------------}
         nEntries =
           str :: List.filter (\ e -> e /= str ) model.entries
       in
@@ -185,16 +149,10 @@ isEmptyString s =
 viewButton : (String -> Html msg) -> (String -> msg) -> Model -> Html msg
 viewButton labeller actionMsg model =
   let
-      -- fieldIsEmpty = String.isEmpty ( String.trim model.field )
-      -- tmpFieldIsEmpty = String.isEmpty ( String.trim model.tmpField )
-      fieldIsEmpty = isEmptyString model.field
+      fieldIsEmpty    = isEmptyString model.field
       tmpFieldIsEmpty = isEmptyString model.tmpField
 
 {-------------------------------------------------------------------
-      enableSave = ---allowToSave &&
-      ( not (
-        fieldIsEmpty && tmpFieldNameIsEmpty
-      ) )
 -------------------------------------------------------------------}
       isBlocked =
         fieldIsEmpty && tmpFieldIsEmpty
@@ -204,14 +162,9 @@ viewButton labeller actionMsg model =
         else
           String.trim model.field
   in
-      button [
-                  -- onClick Action
-                  onClick ( actionMsg actionStr )
---                  onClick ( model.onSuccess model.tmpField )
---                , disabled cfgNameIsEmpty
-                  , disabled isBlocked
-              --  , disabled (not enableSave)
-                ] [ labeller actionStr ]
+      button [ onClick ( actionMsg actionStr )
+             , disabled isBlocked
+             ] [ labeller actionStr ]
 {-------------------------------------------------------------------
 -------------------------------------------------------------------}
 
@@ -225,46 +178,30 @@ viewOption neutralEntry selectMsg model =
         s
     optAttrs s =
       ( selected ( s == model.field ) ) :: (
-        if isEmptyString s || s == model.field then
+        -- if isEmptyString s || s == model.field then
+        if s == model.field then
           []
         else
           [ onClick (selectMsg s) ]
       )
     opt s =
-      -- option [ onClick (selectMsg s) ] [ text (txt s) ]
       option ( optAttrs s ) [ text (txt s) ]
   in
     select []
-        -- ( List.map (\ s -> option [ onClick (selectMsg s) ] [ text s ] ) model.entries )
         ( List.map opt model.entries )
 
-{-------------------------------------------------------------------
-  let
-      fieldIsEmpty = String.isEmpty ( String.trim model.field )
-      tmpFieldNameIsEmpty = String.isEmpty ( String.trim model.tmpField )
-      enableSave = ---allowToSave &&
-      ( not (
-        fieldIsEmpty && tmpFieldNameIsEmpty
-      ) )
-  in
-      button [
-                  -- onClick Action
-                  onClick ( actionMsg model.field )
---                  onClick ( model.onSuccess model.tmpField )
---                , disabled cfgNameIsEmpty
-              --  , disabled (not enableSave)
-                ] [ label ]
--------------------------------------------------------------------}
 
 viewField : Model -> Html Msg
 viewField model =
   let
       fieldIsEmpty = String.isEmpty ( String.trim model.field )
+{-------------------------------------------------------------------
       tmpFieldNameIsEmpty = String.isEmpty ( String.trim model.tmpField )
-      enableSave = ---allowToSave &&
+      enableSave =
       ( not (
         fieldIsEmpty && tmpFieldNameIsEmpty
       ) )
+-------------------------------------------------------------------}
   in
 {-------------------------------------------------------------------
 -------------------------------------------------------------------}
