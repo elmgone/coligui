@@ -51,13 +51,15 @@ type alias Model =
 
 init : ( Model, Cmd Msg )
 init =
-    ( Model ( ComboBox.init "Choose" ), Cmd.none )
+    ( Model ( ComboBox.init "Choose"  -- onSuccess
+    ), Cmd.none )
 
 
 -- UPDATE
 
 type Msg
   = ComboMsg ComboBox.Msg
+  | Success String
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
@@ -67,13 +69,28 @@ update msg model =
         ( nCombo, nCbMsg ) = ComboBox.update cbMsg model.combo
       in
         { model | combo = nCombo } ! [ Cmd.map ComboMsg nCbMsg ]
-      --model ! [ cbMsg ]
 
+    Success str ->
+      let
+        ( nCombo, nCbMsg ) = ComboBox.update (ComboBox.Success str) model.combo
+      in
+        { model | combo = nCombo } ! [ Cmd.map ComboMsg nCbMsg ]
 
-
+onSuccess : String -> ComboBox.Msg
+onSuccess chosen =
+  ComboBox.Success ( Debug.log "CBT success" chosen )
 
 -- VIEW
 
 view : Model -> Html Msg
 view model =
-  Html.App.map ComboMsg ( ComboBox.view model.combo )
+  -- Html.App.map ComboMsg ( ComboBox.view ComboMsg Success model.combo )
+  table [] [ tr [] [
+    td [] [ ComboBox.viewButton success model.combo ]
+  , td [] [ Html.App.map ComboMsg ( ComboBox.viewField model.combo ) ]
+  , td [] [ Html.App.map ComboMsg ( ComboBox.viewDbg model.combo ) ]
+  ] ]
+
+success : String -> Msg
+success str =
+  Success str
