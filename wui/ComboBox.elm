@@ -45,26 +45,29 @@ main =
 
 type alias Model =  -- onSuccess_F =
     {
-      label      : String
-    , field      : String
+--      label      : String
+--    , 
+      field      : String
     , tmpField   : String
-    , entries    : List Entry
+    --, entries    : List Entry
+    , entries    : List String
     , debug      : Bool
-    ---, onSuccess  : String -> Msg
     }
 
+{------------------------------
 type alias Entry
   = {
       name : String
     , ref  : String
     }
+------------------------------}
 
---init : String -> (String -> Msg) -> Model
---init label onSuccess =
---  Model label "" "default" [] True onSuccess
-init : String -> Model
-init label =
-  Model label "" "default" [] True
+--init : String -> Model
+--init label =
+--  Model label "" "default" [] True
+init : Model
+init =
+  Model "" "default" [] False   -- True
 
 
 
@@ -169,8 +172,8 @@ view msgMapper actionMsg model =
     --------------------}
 ------------------------------------------------------------------}
 
-viewButton : (String -> msg) -> Model -> Html msg
-viewButton actionMsg model =
+viewButton : Html msg -> (String -> msg) -> Model -> Html msg
+viewButton label actionMsg model =
   let
       fieldIsEmpty = String.isEmpty ( String.trim model.field )
       tmpFieldNameIsEmpty = String.isEmpty ( String.trim model.tmpField )
@@ -185,7 +188,7 @@ viewButton actionMsg model =
 --                  onClick ( model.onSuccess model.tmpField )
 --                , disabled cfgNameIsEmpty
               --  , disabled (not enableSave)
-                ] [ text "Save" ]
+                ] [ label ]
 {-------------------------------------------------------------------
     --  table [] [ tr []
       [
@@ -217,7 +220,7 @@ viewField model =
       ) )
   in
     --  table [] [ tr []
-      div [] [
+      -- div [] [
 {-------------------------------------------------------------------
         td [] [ button [
                   -- onClick Action
@@ -227,14 +230,16 @@ viewField model =
               --  , disabled (not enableSave)
                 ] [ text "Save" ] ]
 -------------------------------------------------------------------}
-       td [] [ label [] [ text "Enter new" ] ]
-      , td [] [ input [
+       --- td [] [ label [] [ text "Enter new" ] ]
+      --- , td [] [ 
+      
+                input [
                   type' "text"
                 , value model.tmpField
                 , onInput UpdateField
                 , disabled ( not fieldIsEmpty )
-                ] [] ]
-      ]
+                ] [] -- ]
+      -- ]
 
 
     {--------------------

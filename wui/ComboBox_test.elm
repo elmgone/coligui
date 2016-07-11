@@ -51,7 +51,7 @@ type alias Model =
 
 init : ( Model, Cmd Msg )
 init =
-    ( Model ( ComboBox.init "Choose"  -- onSuccess
+    ( Model ( ComboBox.init    -- "Choose"  -- onSuccess
     ), Cmd.none )
 
 
@@ -72,7 +72,8 @@ update msg model =
 
     Success str ->
       let
-        ( nCombo, nCbMsg ) = ComboBox.update (ComboBox.Success str) model.combo
+        msgStr = Debug.log "CB.Test.Success" str
+        ( nCombo, nCbMsg ) = ComboBox.update (ComboBox.Success msgStr) model.combo
       in
         { model | combo = nCombo } ! [ Cmd.map ComboMsg nCbMsg ]
 
@@ -86,7 +87,8 @@ view : Model -> Html Msg
 view model =
   -- Html.App.map ComboMsg ( ComboBox.view ComboMsg Success model.combo )
   table [] [ tr [] [
-    td [] [ ComboBox.viewButton success model.combo ]
+    td [] [ ComboBox.viewButton ( text "TEST ! Action" ) success model.combo ]
+  , td [] [ label [] [ text "Test: Pick new" ] ]
   , td [] [ Html.App.map ComboMsg ( ComboBox.viewField model.combo ) ]
   , td [] [ Html.App.map ComboMsg ( ComboBox.viewDbg model.combo ) ]
   ] ]
