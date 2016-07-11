@@ -14,14 +14,14 @@
 
 module ComboBox exposing (..)
 
-import Widget as W -- exposing (..)
+-- import Widget as W -- exposing (..)
 
 import Html exposing (..)
 import Html.Events exposing (..)
 import Html.Attributes exposing (..)
-import Html.App
-import Cmd.Extra
-import String exposing (..)
+-- import Html.App
+-- import Cmd.Extra
+import String -- exposing (..)
 
 
 {----------------------------------------------
@@ -80,9 +80,7 @@ type alias Config msg =
 -- UPDATE
 
 type Msg
-  = NoOp
-  | UpdateField String
-  | Action
+  = UpdateField String
   | Select String
   | Success String
   | ToggleDebug Bool
@@ -92,37 +90,26 @@ type Msg
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
   case msg of
-    NoOp ->
-      model ! []
-
     UpdateField str ->
       { model | tmpField = str, field = "" }
         ! []
 
-      {-------------------------------------}
-    Action ->
-      let
-        nField =
-          if model.field == "" then
-            model.tmpField
-          else
-            model.field
-      in
-        { model | field = nField, tmpField = "" } ! []
-      {-------------------------------------}
-
     Select str ->
+      updateWith False str model
+      {-------------------------------------------------------
       let
         nEntries = model.entries
-          --- str :: List.filter (\ e -> e /= str ) model.entries
       in
         { model
         | field = str
         , tmpField = ""
-        , entries = nEntries
+        --, entries = nEntries
         } ! []
+      -------------------------------------------------------}
 
     Success str ->
+      updateWith True str model
+      {-------------------------------------------------------
       let
         nEntries =
           str :: List.filter (\ e -> e /= str ) model.entries
@@ -132,9 +119,26 @@ update msg model =
         , tmpField = ""
         , entries = nEntries
         } ! []
+      -------------------------------------------------------}
 
     ToggleDebug dbg ->
       { model | debug = dbg } ! []
+
+
+updateWith : Bool -> String -> Model -> ( Model, Cmd Msg )
+updateWith updateEntries str model =
+      let
+        nEntries =
+          if updateEntries then
+            str :: List.filter (\ e -> e /= str ) model.entries
+          else
+            model.entries
+      in
+        { model
+        | field = str
+        , tmpField = ""
+        , entries = nEntries
+        } ! []
 
 
 -- VIEW
@@ -195,13 +199,6 @@ viewField : Model -> Html Msg
 viewField model =
   let
       fieldIsEmpty = String.isEmpty ( String.trim model.field )
-{-------------------------------------------------------------------
-      tmpFieldNameIsEmpty = String.isEmpty ( String.trim model.tmpField )
-      enableSave =
-      ( not (
-        fieldIsEmpty && tmpFieldNameIsEmpty
-      ) )
--------------------------------------------------------------------}
   in
 {-------------------------------------------------------------------
 -------------------------------------------------------------------}
