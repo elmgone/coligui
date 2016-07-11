@@ -16,12 +16,11 @@ module ComboBox exposing (..)
 
 -- import Widget as W -- exposing (..)
 
-import Html exposing (..)
-import Html.Events exposing (..)
-import Html.Attributes exposing (..)
+import Html -- exposing (..)
+import Html.Events -- exposing (..)
+import Html.Attributes -- exposing (..)
 -- import Html.App
--- import Cmd.Extra
-import String -- exposing (..)
+import String
 
 
 {----------------------------------------------
@@ -128,9 +127,14 @@ update msg model =
 updateWith : Bool -> String -> Model -> ( Model, Cmd Msg )
 updateWith updateEntries str model =
       let
+        m =
+          if updateEntries then "Success" else "Select"
+        s =
+          if model.debug then Debug.log ( "CB." ++ m ) str
+          else str
         nEntries =
           if updateEntries then
-            str :: List.filter (\ e -> e /= str ) model.entries
+            str :: List.filter (\ e -> e /= s ) model.entries
           else
             model.entries
       in
@@ -150,7 +154,7 @@ isEmptyString : String -> Bool
 isEmptyString s =
   String.isEmpty ( String.trim s )
 
-viewButton : (String -> Html msg) -> (String -> msg) -> Model -> Html msg
+viewButton : (String -> Html.Html msg) -> (String -> msg) -> Model -> Html.Html msg
 viewButton labeller actionMsg model =
   let
       fieldIsEmpty    = isEmptyString model.field
@@ -166,13 +170,13 @@ viewButton labeller actionMsg model =
         else
           String.trim model.field
   in
-      button [ onClick ( actionMsg actionStr )
-             , disabled isBlocked
+      Html.button [ Html.Events.onClick ( actionMsg actionStr )
+             , Html.Attributes.disabled isBlocked
              ] [ labeller actionStr ]
 {-------------------------------------------------------------------
 -------------------------------------------------------------------}
 
-viewOption : String -> (String -> msg) -> Model -> Html msg
+viewOption : String -> (String -> msg) -> Model -> Html.Html msg
 viewOption neutralEntry selectMsg model =
   let
     txt s =
@@ -181,58 +185,58 @@ viewOption neutralEntry selectMsg model =
       else
         s
     optAttrs s =
-      ( selected ( s == model.field ) ) :: (
+      ( Html.Attributes.selected ( s == model.field ) ) :: (
         -- if isEmptyString s || s == model.field then
         if s == model.field then
           []
         else
-          [ onClick (selectMsg s) ]
+          [ Html.Events.onClick (selectMsg s) ]
       )
     opt s =
-      option ( optAttrs s ) [ text (txt s) ]
+      Html.option ( optAttrs s ) [ Html.text (txt s) ]
   in
-    select []
+    Html.select []
         ( List.map opt model.entries )
 
 
-viewField : Model -> Html Msg
+viewField : Model -> Html.Html Msg
 viewField model =
   let
       fieldIsEmpty = String.isEmpty ( String.trim model.field )
   in
 {-------------------------------------------------------------------
 -------------------------------------------------------------------}
-                input [
-                  type' "text"
-                , value model.tmpField
-                , onInput UpdateField
+                Html.input [
+                  Html.Attributes.type' "text"
+                , Html.Attributes.value model.tmpField
+                , Html.Events.onInput UpdateField
                 --, disabled ( not fieldIsEmpty )
                 
         --, placeholder "What needs to be done?"
         --, name "newTodo"
         --, onInput UpdateField
         --, onEnter Add
-          , autofocus True
+          , Html.Attributes.autofocus True
                 ] []
 
 
 
 {--------------------------------------------------------------}
-viewDbg : Model -> Html Msg
+viewDbg : Model -> Html.Html Msg
 viewDbg model =
   let
     dbgInfo =
       if model.debug then
-        text ( toString model )
+        Html.text ( toString model )
       else
-        div [] []
+        Html.div [] []
   in
-      div [] [
-        label [] [ text "debug" ]
-      , input [
-          type' "checkbox"
-          , checked model.debug
-          , onCheck ToggleDebug
+      Html.div [] [
+        Html.label [] [ Html.text "debug" ]
+      , Html.input [
+          Html.Attributes.type' "checkbox"
+          , Html.Attributes.checked model.debug
+          , Html.Events.onCheck ToggleDebug
         ] []
       , dbgInfo
       ]

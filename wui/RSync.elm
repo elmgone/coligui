@@ -24,7 +24,9 @@ import Widget as W
 
 import RSyncConfig exposing (..)
 
-import Html exposing (..)
+import ComboBox -- as CB
+
+import Html  -- exposing (..)
 import Html.App
 import Html.Events exposing (..)
 import Html.Attributes exposing (..)
@@ -49,6 +51,9 @@ type alias Model =
   { id           : String
 --  , cfgName      : String
 --  , tmpCfgName   : String
+
+  , combo        : ComboBox.Model
+
   , output       : String
   , debug        : Bool
 
@@ -78,7 +83,7 @@ init =
       RSyncConfig.init
     ] (W.fmtList "rsync {{}} # ..." " ")
   in
-    ( Model "" "" "default" "" False root
+    ( Model "" ComboBox.init "" False root
     , Cmd.none )
 
 
@@ -86,12 +91,16 @@ init =
 
 type Msg =
     CallWidget W.Msg
-    | Save
-    | SaveSucceed SaveResult
-    | SaveFail Http.Error
+  | ComboMsg ComboBox.Msg
+  | JobSelect String
+  | JobSuccess String
+  
+--    | Save
+--    | SaveSucceed SaveResult
+--    | SaveFail Http.Error
 --    | ToggleDebug Bool
-    | EditCfgName String
-    | SetCfgName String
+--    | EditCfgName String
+--    | SetCfgName String
 
 update : Msg -> Model -> (Model, Cmd Msg)
 update msg model =
@@ -104,7 +113,38 @@ update msg model =
           , Cmd.map CallWidget cmd
           )
 
-{--------------------------------------}
+      ComboMsg cbMsg ->
+        let
+          ( newCombo, nCbMsg ) = ComboBox.update cbMsg model.combo
+        in
+          ( { model | combo = newCombo }
+          , Cmd.map ComboMsg nCbMsg
+          )
+
+{--------------------------------------
+    Success str ->
+      let
+        msgStr = Debug.log "CB.Test.Success" str
+        ( nCombo, nCbMsg ) = ComboBox.update (ComboBox.Success msgStr) model.combo
+      in
+        { model | combo = nCombo } ! [ Cmd.map ComboMsg nCbMsg ]
+--------------------------------------}
+
+      JobSelect str ->
+        let
+          msgStr = Debug.log "RSync.JobSelect" str
+          ( nCombo, nCbMsg ) = ComboBox.update (ComboBox.Select msgStr) model.combo
+        in
+          { model | combo = nCombo } ! [ Cmd.map ComboMsg nCbMsg ]
+
+      JobSuccess str ->
+        let
+          msgStr = Debug.log "RSync.JobSuccess" str
+          ( nCombo, nCbMsg ) = ComboBox.update (ComboBox.Success msgStr) model.combo
+        in
+          { model | combo = nCombo } ! [ Cmd.map ComboMsg nCbMsg ]
+
+{--------------------------------------
       Save ->
         let
           data = W.treeToJson 2 model.root
@@ -145,6 +185,7 @@ update msg model =
             ( { model | cfgName = cName }
             , Cmd.none
             )
+--------------------------------------}
 
 
 type alias SaveResult =
@@ -162,6 +203,7 @@ decodeSaved =
     ("yid"  := JD.string)
     ("cmd" := JD.string)
 
+{--------------------------------------
 saveJob : Model -> Cmd Msg
 saveJob model =
   let
@@ -171,24 +213,25 @@ saveJob model =
     postCall = Http.post decodeSaved url (Http.string body_s)
   in
     Task.perform SaveFail SaveSucceed postCall
+--------------------------------------}
 
 
 
 -- VIEW
 
-view : Model -> Html Msg
+view : Model -> Html.Html Msg
 view model =
   let
     v = ""
   in
-    div [] [
+    Html.div [] [
 {------------------------------------------------------------}
-      h2 [] [ text "RSync" ]
+      Html.h2 [] [ Html.text "RSync" ]
     , viewHead "XxX" model True
     , viewBody model
     ]
 
-viewBody : Model -> Html Msg
+viewBody : Model -> Html.Html Msg
 viewBody model =
   let
     (n, v) = W.viewRoot model.root
@@ -219,29 +262,33 @@ viewBody model =
 ------------------------------------------------------------}
 
 
+selectX : String -> Msg
+selectX str =
+  JobSelect str
 
-viewHead : String -> Model -> Bool -> Html Msg
+successX : String -> Msg
+successX str =
+  JobSuccess str
+
+
+viewHead : String -> Model -> Bool -> Html.Html Msg
 viewHead labelText model allowToSave =
   let
-      cfgNameIsEmpty = String.isEmpty ( String.trim model.cfgName )
-      tmpCfgNameIsEmpty = String.isEmpty ( String.trim model.tmpCfgName )
-      enableSave = allowToSave && ( not (
-        cfgNameIsEmpty && tmpCfgNameIsEmpty
-      ) )
+    buttonText selection =
+      Html.text ( "Save '" ++ selection ++ "' !" )
   in
-      table [] [ tr [] [
-        td [] [ button [
-                  onClick Save
---                , disabled cfgNameIsEmpty
-                , disabled (not enableSave)
-                ] [ text "Save" ] ]
-      , td [] [ label [] [ text labelText ] ]
-      , td [] [ input [
-                  type' "text"
-                , value model.tmpCfgName
-                , onInput EditCfgName
-                ] [] ]
-      ] ]
+    Html.table [] [ Html.tr [] [
+      Html.td [] [ ComboBox.viewOption "--" selectX model.combo ]
+    , Html.td [] [ ComboBox.viewButton buttonText successX model.combo ]
+    , Html.td [] [ Html.label [] [ Html.text "Test: Pick new" ] ]
+    , Html.td [] [ Html.App.map ComboMsg ( ComboBox.viewField model.combo ) ]
+    , Html.td [] [ Html.App.map ComboMsg ( ComboBox.viewDbg model.combo ) ]
+
+{------------------------------------------------------------
+------------------------------------------------------------}
+    ] ]
+{------------------------------------------------------------
+------------------------------------------------------------}
 
 {------------------------------------------------------------
   let

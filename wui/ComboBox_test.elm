@@ -79,9 +79,11 @@ update msg model =
       in
         { model | combo = nCombo } ! [ Cmd.map ComboMsg nCbMsg ]
 
+{----------------------------------------
 onSuccess : String -> ComboBox.Msg
 onSuccess chosen =
   ComboBox.Success ( Debug.log "CBT success" chosen )
+----------------------------------------}
 
 -- VIEW
 
