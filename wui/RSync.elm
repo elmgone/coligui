@@ -53,6 +53,7 @@ type alias Model =
 --  , tmpCfgName   : String
 
   , combo        : ComboBox.Model
+  , saveErr      : Maybe Http.Error
 
   , output       : String
   , debug        : Bool
@@ -83,7 +84,7 @@ init =
       RSyncConfig.init
     ] (W.fmtList "rsync {{}} # ..." " ")
   in
-    ( Model "" ComboBox.init "" False root
+    ( Model "" ComboBox.init Nothing "" False root
     , Cmd.none )
 
 
@@ -94,7 +95,7 @@ type Msg =
   | ComboMsg ComboBox.Msg
   | JobSelect String
   | JobSave String
-  
+
 --    | Save
     | SaveSucceed SaveResult
     | SaveFail Http.Error
@@ -131,10 +132,10 @@ update msg model =
       JobSave str ->
         let
           msgStr = Debug.log "RSync.JobSave" str
-          
+
           saveCmdMsg =
             saveJob msgStr model
-          
+
           ( nCombo, nCbMsg ) = ComboBox.update (ComboBox.Success msgStr) model.combo
           xCmdMsg =
             Cmd.map ComboMsg nCbMsg
@@ -161,12 +162,18 @@ update msg model =
 --------------------------------------}
 
       SaveSucceed sRes ->  -- String
-            ( { model | output = toString sRes }
+            ( { model
+              | output = toString sRes
+              , saveErr = Nothing
+              }
             , Cmd.none
             )
 
       SaveFail err ->  -- Http.Error
-            ( { model | output = toString err }
+            ( { model
+              | output = toString err
+              , saveErr = Just err
+              }
             , Cmd.none
             )
 
@@ -271,8 +278,36 @@ successX str =
 viewHead : String -> Model -> Bool -> Html.Html Msg
 viewHead labelText model allowToSave =
   let
+    errMsg =
+      case model.saveErr of
+        Just err ->
+          Html.b [ Html.Attributes.style [
+            --("backgroundColor", "green")
+          --,
+          ("color", "red")
+--        , ("height", "90px")
+--        , ("width", "100%")
+        ] ] [
+          Html.text ( "   !! " ++ ( toString err ) ++ " !!" )
+        ]
+--          toString err
+        Nothing ->
+          Html.div [] []
+
     buttonText selection =
-      Html.text ( "Save '" ++ selection ++ "' !" )
+      Html.div [] [
+        Html.text ( "Save " )
+      , Html.em [] [ Html.text ( selection ) ]
+      , errMsg
+      {------------------------------------------
+      , Html.em [ Html.Attributes.style [
+          ("backgroundColor", "red")
+--        , ("height", "90px")
+--        , ("width", "100%")
+        ] ] [
+          Html.text ( ": " ++ errMsg ) ]
+      ------------------------------------------}
+      ]
   in
     Html.table [] [ Html.tr [] [
       Html.td [] [ Html.label [] [ Html.text "Job" ] ]
