@@ -15,7 +15,7 @@
 module Main exposing (Model, Msg, init, update, view)
 
 import Widget          as W  exposing (..)
-import JobType           --  exposing (..)
+-- import JobType           --  exposing (..)
 import RSync                 exposing (..)
 
 import Html                  exposing (..)
@@ -47,7 +47,7 @@ type alias Model =
   , debug     : Bool
 
   -- widgets
-  , jobTypes  : JobType.Model
+--  , jobTypes  : JobType.Model
 --  , rootNode  : W.Node
   , rsync     : RSync.Model
   , allowSave : Bool
@@ -55,15 +55,15 @@ type alias Model =
 
 init : (Model, Cmd Msg)
 init =
-  let
+--  let
 --    ( root, nodes ) = aRoot "RSync" [
 --      fst RSync.init
 --    ] (fmtList "rsync {{}} # ..." " ")
-    jt = JobType.init
-  in
+--    jt = JobType.init
+--  in
 --    ( Model "" "default" "" False root
     ( Model "" False
-      jt
+--      jt
       --( fst RSync.init ).root
       (fst RSync.init)
       True
@@ -74,7 +74,7 @@ init =
 
 type Msg =
     CallRSync   RSync.Msg
-  | CallJobType JobType.Msg
+--  | CallJobType JobType.Msg
 --    | Save
 --    | SaveSucceed SaveResult
 --    | SaveFail Http.Error
@@ -91,6 +91,7 @@ update msg model =
           ( { model | rsync = newRoot }
           , Cmd.map CallRSync cmd
           )
+{-------------------------------------
       CallJobType jtMsg ->
         let
           ( newJT, cmd ) = JobType.update jtMsg model.jobTypes
@@ -98,6 +99,7 @@ update msg model =
           ( { model | jobTypes = newJT }
           , Cmd.map CallJobType cmd
           )
+-------------------------------------}
       ToggleDebug dbg ->
             ( { model | debug = dbg }, Cmd.none )
 
@@ -107,7 +109,7 @@ view : Model -> Html Msg
 view model =
   let
     --( rootName, rootView ) = W.viewRoot model.rootNode
-    jt = JobType.view model.jobTypes
+    -- jt = JobType.view model.jobTypes
 
     rsyncHead = RSync.viewHead "Pick Name" model.rsync model.allowSave
 
@@ -136,9 +138,9 @@ view model =
     div [] [
       h2 [] [ text "RSync" ]
     , table [] [ tr [] [
-          td [] [ Html.App.map CallJobType jt ]
+--          td [] [ Html.App.map CallJobType jt ]
         --, td [] [ Html.App.map CallRSync (RSync.viewHead "Pick Name" model.rsync) ]
-        , td [] [ Html.App.map CallRSync rsyncHead ]
+          td [] [ Html.App.map CallRSync rsyncHead ]
         ]
       ]
     , Html.App.map CallRSync (RSync.viewBody model.rsync)
