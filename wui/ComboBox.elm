@@ -100,6 +100,7 @@ type Msg
   = NoOp
   | UpdateField String
   | Action
+  | Select String
   | Success String
   | ToggleDebug Bool
   --| AddEntry Entry
@@ -115,7 +116,7 @@ update msg model =
       -- ( model, Cmd.none )
 
     UpdateField str ->
-      { model | tmpField = str }
+      { model | tmpField = str, field = "" }
         ! []
 
       {-------------------------------------}
@@ -129,6 +130,25 @@ update msg model =
       in
         { model | field = nField, tmpField = "" } ! []
       {-------------------------------------}
+
+    Select str ->
+      let
+      {-------------------------------------
+        nField =
+          if model.field == "" then
+            model.tmpField
+            str
+          else
+            model.field
+      -------------------------------------}
+        nEntries = model.entries
+          --- str :: List.filter (\ e -> e /= str ) model.entries
+      in
+        { model
+        | field = str
+        , tmpField = ""
+        , entries = nEntries
+        } ! []
 
     Success str ->
       let
@@ -158,15 +178,26 @@ update msg model =
 {------------------------------------------------------------------
 ------------------------------------------------------------------}
 
-viewButton : Html msg -> (String -> msg) -> Model -> Html msg
-viewButton label actionMsg model =
+isEmptyString : String -> Bool
+isEmptyString s =
+  String.isEmpty ( String.trim s )
+
+viewButton : (String -> Html msg) -> (String -> msg) -> Model -> Html msg
+viewButton labeller actionMsg model =
   let
-      fieldIsEmpty = String.isEmpty ( String.trim model.field )
-      tmpFieldNameIsEmpty = String.isEmpty ( String.trim model.tmpField )
+      -- fieldIsEmpty = String.isEmpty ( String.trim model.field )
+      -- tmpFieldIsEmpty = String.isEmpty ( String.trim model.tmpField )
+      fieldIsEmpty = isEmptyString model.field
+      tmpFieldIsEmpty = isEmptyString model.tmpField
+
+{-------------------------------------------------------------------
       enableSave = ---allowToSave &&
       ( not (
         fieldIsEmpty && tmpFieldNameIsEmpty
       ) )
+-------------------------------------------------------------------}
+      isBlocked =
+        fieldIsEmpty && tmpFieldIsEmpty
       actionStr =
         if fieldIsEmpty then
           String.trim model.tmpField
@@ -178,8 +209,9 @@ viewButton label actionMsg model =
                   onClick ( actionMsg actionStr )
 --                  onClick ( model.onSuccess model.tmpField )
 --                , disabled cfgNameIsEmpty
+                  , disabled isBlocked
               --  , disabled (not enableSave)
-                ] [ label ]
+                ] [ labeller actionStr ]
 {-------------------------------------------------------------------
 -------------------------------------------------------------------}
 
@@ -191,8 +223,16 @@ viewOption neutralEntry selectMsg model =
         neutralEntry
       else
         s
+    optAttrs s =
+      ( selected ( s == model.field ) ) :: (
+        if isEmptyString s || s == model.field then
+          []
+        else
+          [ onClick (selectMsg s) ]
+      )
     opt s =
-      option [ onClick (selectMsg s) ] [ text (txt s) ]
+      -- option [ onClick (selectMsg s) ] [ text (txt s) ]
+      option ( optAttrs s ) [ text (txt s) ]
   in
     select []
         -- ( List.map (\ s -> option [ onClick (selectMsg s) ] [ text s ] ) model.entries )
@@ -232,7 +272,8 @@ viewField model =
                   type' "text"
                 , value model.tmpField
                 , onInput UpdateField
-                , disabled ( not fieldIsEmpty )
+                --, disabled ( not fieldIsEmpty )
+                
         --, placeholder "What needs to be done?"
         --, name "newTodo"
         --, onInput UpdateField

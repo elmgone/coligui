@@ -60,6 +60,7 @@ init =
 type Msg
   = ComboMsg ComboBox.Msg
   | Success String
+  | Select String
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
@@ -77,6 +78,13 @@ update msg model =
       in
         { model | combo = nCombo } ! [ Cmd.map ComboMsg nCbMsg ]
 
+    Select str ->
+      let
+        msgStr = Debug.log "CB.Test.Select" str
+        ( nCombo, nCbMsg ) = ComboBox.update (ComboBox.Select msgStr) model.combo
+      in
+        { model | combo = nCombo } ! [ Cmd.map ComboMsg nCbMsg ]
+
 onSuccess : String -> ComboBox.Msg
 onSuccess chosen =
   ComboBox.Success ( Debug.log "CBT success" chosen )
@@ -85,14 +93,17 @@ onSuccess chosen =
 
 view : Model -> Html Msg
 view model =
-  -- Html.App.map ComboMsg ( ComboBox.view ComboMsg Success model.combo )
   table [] [ tr [] [
-    td [] [ ComboBox.viewOption "--" success model.combo ]
-  , td [] [ ComboBox.viewButton ( text "TEST ! Action" ) success model.combo ]
+    td [] [ ComboBox.viewOption "--" select model.combo ]
+  , td [] [ ComboBox.viewButton (\ s -> text ( "Save '" ++ s ++ "' !" ) ) success model.combo ]
   , td [] [ label [] [ text "Test: Pick new" ] ]
   , td [] [ Html.App.map ComboMsg ( ComboBox.viewField model.combo ) ]
   , td [] [ Html.App.map ComboMsg ( ComboBox.viewDbg model.combo ) ]
   ] ]
+
+select : String -> Msg
+select str =
+  Select str
 
 success : String -> Msg
 success str =
