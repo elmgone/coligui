@@ -27,10 +27,12 @@ fi
 
 cd wui &&
 	elm make Main.elm &&
-	firefox index.html &&
-	cd .. &&
-	$BLD &&
-    $RUN
+	LOGXI=* coligui wui
+
+#	firefox index.html &&
+#	cd .. &&
+#	$BLD &&
+#   $RUN
 
 ##	./build.sh
 

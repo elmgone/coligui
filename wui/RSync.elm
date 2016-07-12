@@ -15,17 +15,11 @@
 module RSync exposing (Model, Msg, init, update, viewHead, viewBody)
 
 import Widget as W
-{----------------------------------------------------------
-  exposing (
-    aRoot, aVertical, aHorizontal, aSwitch, aBool, aString
-  , fmtList   --, fmtById
-  )
-----------------------------------------------------------}
 
 import RSyncConfig exposing (..)
 
-import ComboBox -- as CB
-import Util
+import ComboBox
+import Util.Debug
 import JobType
 
 import Html              exposing (..)
@@ -57,7 +51,7 @@ type alias Model =
   , lastOk       : Maybe String
 
   , output       : String
-  , debug        : Util.Model
+  , debug        : Util.Debug.Model
 
   -- widgets
   , root      : W.Node
@@ -85,7 +79,7 @@ init =
       RSyncConfig.init
     ] (W.fmtList "rsync {{}} # ..." " ")
   in
-    ( Model "" ComboBox.init Nothing (Just "started") "" Util.init root
+    ( Model "" ComboBox.init Nothing (Just "started") "" Util.Debug.init root
     , Cmd.none )
 
 
@@ -94,7 +88,7 @@ init =
 type Msg =
     CallWidget W.Msg
   | ComboMsg ComboBox.Msg
-  | DebugMsg Util.Msg
+  | DebugMsg Util.Debug.Msg
   | JobSelect String
   | JobSaveRequested String
   | SaveSucceed SaveJobResult
@@ -131,7 +125,7 @@ update msg model =
 
       DebugMsg dbgMsg ->
         let
-          ( newDebug, nDbgMsg ) = Util.update dbgMsg model.debug
+          ( newDebug, nDbgMsg ) = Util.Debug.update dbgMsg model.debug
         in
           ( { model | debug = newDebug }
           , Cmd.map DebugMsg nDbgMsg
@@ -295,7 +289,7 @@ viewBody model =
   in
     Html.div [] [
       Html.App.map CallWidget v
-    , Html.App.map DebugMsg ( Util.viewDbgStr model.output model.debug )
+    , Html.App.map DebugMsg ( Util.Debug.viewDbgStr model.output model.debug )
     ]
 
 {------------------------------------------------------------

@@ -7,8 +7,8 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"io/ioutil"
-	//	"log"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -109,28 +109,55 @@ func (node *Node) WalkTree(cnf func(*Node) error) error {
 	return cnf(node)
 }
 
-func ServeGin(port int) error {
+func ServeGin(port int, htmlFiles_l []string) error {
 	baseDir := "/tmp"
 	//	eh := errHandler_T{}
-	return /*eh.*/ ServeGinX(port, baseDir)
+	return /*eh.*/ ServeGinX(port, baseDir, htmlFiles_l)
 }
 
-func /*(eh *errHandler_T)*/ ServeGinX(port int, baseDir string) error {
+func /*(eh *errHandler_T)*/ ServeGinX(port int, baseDir string, htmlFiles_l []string) error {
 	router := gin.Default()
 
 	router.GET("/", func(c *gin.Context) {
-		wui.WriteWuiHtml(c.Writer)
+		eh := errHandler_T{}
+		var index_b []byte
+		eh.safe(func() {
+			for _, fn := range htmlFiles_l { //--[]string{"index.html", "wui/index.html"} {
+				index_b, eh.err = ioutil.ReadFile(fn)
+				if eh.err == nil {
+					var n int64
+					n, eh.err = io.Copy(c.Writer, bytes.NewBuffer(index_b))
+					log.Info("serving local file index.html", "file", fn, "size", n, "err", eh.err)
+					break
+				}
+				//				 else {
+				//					eh.err = wui.WriteWuiHtml(c.Writer)
+				//					log.Info("serving builtin index.html", "err", eh.err)
+				//				}
+			}
+			if len(index_b) == 0 {
+				eh.err = wui.WriteWuiHtml(c.Writer)
+				log.Info("serving builtin index.html", "err", eh.err)
+			}
+			//			index_b, eh.err = ioutil.ReadFile("index.html")
+			//			if eh.err == nil {
+			//				var n int64
+			//				n, eh.err = io.Copy(c.Writer, bytes.NewBuffer(index_b))
+			//				log.Info("serving local file index.html", "size", n, "err", eh.err)
+			//			} else {
+			//				eh.err = wui.WriteWuiHtml(c.Writer)
+			//				log.Info("serving builtin index.html", "err", eh.err)
+			//			}
+		})
+		//		eh.ifErr(func() {})
+		eh.ifErr(func() { c.AbortWithError(http.StatusBadRequest, eh.err) })
+		//		return eh.err
 	})
 
 	router.POST("/jobs/:cmd", func(c *gin.Context) {
 		eh := errHandler_T{}
 		eh.handleJobPost(baseDir, c)
 	})
-
-	//	router.GET("/jobs", func(c *gin.Context) {
-	//		eh := errHandler_T{}
-	//		eh.handleJobList(baseDir, c)
-	//	})
 
 	router.GET("/jobs/:cmd", func(c *gin.Context) {
 		eh := errHandler_T{}
@@ -206,15 +233,8 @@ func (eh *errHandler_T) handleJobList(baseDir string, c *gin.Context) error {
 					},
 				},
 			},
-			//				"id-x1": "hra",
-			//				"id-x2": "kati",
-			//				"id-x3": "def",
-			//			},
-			//			"jid":   job.JsonSha1,
-			//			"yid":   job.YamlSha1,
-			//			"cmd":   cmdMsg, // job.Root.CmdLet,
 		}
-		c.JSON(http.StatusCreated, res)
+		c.JSON(http.StatusOK, res)
 	})
 
 	//	eh.ifErr(func() { c.AbortWithError(http.StatusBadRequest, eh.err) })

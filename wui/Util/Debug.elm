@@ -12,14 +12,11 @@
 -- See the License for the specific language governing permissions and
 -- limitations under the License.
 
-module Util exposing (..)
-
--- import Widget as W -- exposing (..)
+module Util.Debug exposing (..)
 
 import Html -- exposing (..)
 import Html.Events -- exposing (..)
 import Html.Attributes -- exposing (..)
--- import Html.App
 import String
 
 -- MODEL
