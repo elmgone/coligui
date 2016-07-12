@@ -1,6 +1,7 @@
 package srv
 
 import (
+	"bufio"
 	"bytes"
 	"crypto/sha1"
 	"encoding/hex"
@@ -109,20 +110,19 @@ func (node *Node) WalkTree(cnf func(*Node) error) error {
 	return cnf(node)
 }
 
-func ServeGin(port int, htmlFiles_l []string) error {
-	baseDir := "/tmp"
-	//	eh := errHandler_T{}
-	return /*eh.*/ ServeGinX(port, baseDir, htmlFiles_l)
-}
+//func ServeGin(port int, baseDir string, htmlFiles_l []string) error {
+//	//	baseDir := "/tmp"
+//	return ServeGinX(port, baseDir, htmlFiles_l)
+//}
 
-func /*(eh *errHandler_T)*/ ServeGinX(port int, baseDir string, htmlFiles_l []string) error {
+func ServeGin(port int, baseDir string, htmlFiles_l []string) error {
 	router := gin.Default()
 
 	router.GET("/", func(c *gin.Context) {
 		eh := errHandler_T{}
 		var index_b []byte
 		eh.safe(func() {
-			for _, fn := range htmlFiles_l { //--[]string{"index.html", "wui/index.html"} {
+			for _, fn := range htmlFiles_l {
 				index_b, eh.err = ioutil.ReadFile(fn)
 				if eh.err == nil {
 					var n int64
@@ -130,36 +130,24 @@ func /*(eh *errHandler_T)*/ ServeGinX(port int, baseDir string, htmlFiles_l []st
 					log.Info("serving local file index.html", "file", fn, "size", n, "err", eh.err)
 					break
 				}
-				//				 else {
-				//					eh.err = wui.WriteWuiHtml(c.Writer)
-				//					log.Info("serving builtin index.html", "err", eh.err)
-				//				}
 			}
 			if len(index_b) == 0 {
 				eh.err = wui.WriteWuiHtml(c.Writer)
 				log.Info("serving builtin index.html", "err", eh.err)
 			}
-			//			index_b, eh.err = ioutil.ReadFile("index.html")
-			//			if eh.err == nil {
-			//				var n int64
-			//				n, eh.err = io.Copy(c.Writer, bytes.NewBuffer(index_b))
-			//				log.Info("serving local file index.html", "size", n, "err", eh.err)
-			//			} else {
-			//				eh.err = wui.WriteWuiHtml(c.Writer)
-			//				log.Info("serving builtin index.html", "err", eh.err)
-			//			}
 		})
-		//		eh.ifErr(func() {})
+
 		eh.ifErr(func() { c.AbortWithError(http.StatusBadRequest, eh.err) })
-		//		return eh.err
 	})
 
 	router.POST("/jobs/:cmd", func(c *gin.Context) {
+		time.Sleep(300 * time.Millisecond)
 		eh := errHandler_T{}
 		eh.handleJobPost(baseDir, c)
 	})
 
 	router.GET("/jobs/:cmd", func(c *gin.Context) {
+		time.Sleep(300 * time.Millisecond)
 		eh := errHandler_T{}
 		eh.handleJobList(baseDir, c)
 	})
@@ -198,66 +186,124 @@ func (eh *errHandler_T) handleJobList(baseDir string, c *gin.Context) error {
 		panic("UNKNOWN cmdName = " + cmdName)
 	}
 
+	//	eh.safe(func() {
+	//		res := gin.H{
+	//			"job_type": gin.H{
+	//				"name": "RSync",
+	//				"id":   "x0",
+	//				"jobs": []gin.H{
+	//					gin.H{
+	//						"name":    "hra",
+	//						"json_id": "x1",
+	//						"yaml_id": "x1",
+	//						"cmd":     "do IT!",
+	//						"versions": []string{
+	//							"v1", "v2", "v3",
+	//						},
+	//					},
+	//					gin.H{
+	//						"name":    "kati",
+	//						"json_id": "x1",
+	//						"yaml_id": "x1",
+	//						"cmd":     "do IT!",
+	//						"versions": []string{
+	//							"v1", "v2", "v3",
+	//						},
+	//					},
+	//					gin.H{
+	//						"name":    "default",
+	//						"json_id": "x1",
+	//						"yaml_id": "x1",
+	//						"cmd":     "do IT!",
+	//						"versions": []string{
+	//							"v1", "v2", "v3",
+	//						},
+	//					},
+	//				},
+	//			},
+	//		}
+	//		c.JSON(http.StatusOK, res)
+	//	})
+
+	//	eh.ifErr(func() { c.AbortWithError(http.StatusBadRequest, eh.err) })
+	//	return eh.err
+
+	log.Info("loading jobs", "cmd", cmdName)
+
+	var jobs_ml []gin.H
+
+	eh.safe(func() {
+		eh.forAllJobs(
+			baseDir, cmdName, "*", //-- jobName,
+			"", //	"."+cs, // toIgnore,
+
+			// cmdDir, cmdName, jobName
+			func(oldJobFPath string, oldJob_b []byte) error {
+				log.Info("found job", "cmd", cmdName,
+					"jobfile", oldJobFPath, "size", len(oldJob_b))
+
+				var cfg_b []byte
+				eh.safe(func() {
+					cfg_b, eh.err = extractYamlConfig(oldJob_b)
+				})
+				log.Info("extracted job config", "cmd", cmdName,
+					"jobfile", oldJobFPath, "size", len(cfg_b))
+
+				var job Job
+				eh.safe(func() {
+					eh.err = yaml.Unmarshal(cfg_b, &job)
+				})
+				log.Info("parsed job", "cmd", cmdName,
+					"jobfile", oldJobFPath, "name", job.Name)
+
+				job_m := gin.H{
+					"name":    job.Name,
+					"json_id": job.JsonSha1,
+					"yaml_id": job.YamlSha1,
+					"cmd":     job.Root.CmdLet,
+				}
+
+				jobs_ml = append(jobs_ml, job_m)
+
+				eh.ifErr(func() { c.AbortWithError(http.StatusInternalServerError, eh.err) })
+				return eh.err
+			},
+		)
+	})
+
 	eh.safe(func() {
 		res := gin.H{
 			"job_type": gin.H{
-				"name": "RSync",
+				"name": cmdName,
 				"id":   "x0",
-				"jobs": []gin.H{
-					gin.H{
-						"name":    "hra",
-						"json_id": "x1",
-						"yaml_id": "x1",
-						"cmd":     "do IT!",
-						"versions": []string{
-							"v1", "v2", "v3",
-						},
-					},
-					gin.H{
-						"name":    "kati",
-						"json_id": "x1",
-						"yaml_id": "x1",
-						"cmd":     "do IT!",
-						"versions": []string{
-							"v1", "v2", "v3",
-						},
-					},
-					gin.H{
-						"name":    "default",
-						"json_id": "x1",
-						"yaml_id": "x1",
-						"cmd":     "do IT!",
-						"versions": []string{
-							"v1", "v2", "v3",
-						},
-					},
-				},
+				"jobs": jobs_ml,
 			},
 		}
 		c.JSON(http.StatusOK, res)
 	})
 
-	//	eh.ifErr(func() { c.AbortWithError(http.StatusBadRequest, eh.err) })
-	//	return eh.err
-
-	//	eh.safe(func() {
-	//		eh.forAllJobs(
-	//			baseDir, cmdName, "*", //-- jobName,
-	//			"", //	"."+cs, // toIgnore,
-
-	//			// cmdDir, cmdName, jobName
-	//			func(oldJobFPath string, oldJob_b []byte) error {
-	//				fmt.Printf("found: '%s': %d bytes\n",
-	//					oldJobFPath, len(oldJob_b),
-	//				)
-	//				//				eh.renameToBak(cmdDir, cmdName, jobName, oldJobFPath, oldJob_b)
-	//				return eh.err
-	//			},
-	//		)
-	//	})
-
 	eh.ifErr(func() { c.AbortWithError(http.StatusBadRequest, eh.err) })
 	return eh.err
+}
+
+func /*(eh *errHandler_T)*/ extractYamlConfig(job_b []byte) (cfg_b []byte, err error) {
+	//	var cfg_b []byte
+	jobScanner := bufio.NewScanner(bytes.NewBuffer(job_b))
+	isYaml := false
+	for jobScanner.Scan() {
+		line_s := jobScanner.Text()
+		if strings.HasPrefix(line_s, "# begin:  CoLiGui job configuration for:") {
+			isYaml = true
+		} else if strings.HasPrefix(line_s, "# end:  CoLiGui job configuration for:") {
+			isYaml = false
+		}
+		if isYaml {
+			//			log.Info("extractYamlConfig", "line", fmt.Sprintf("%#v", []byte(line_s)))
+			cfg_b = append(cfg_b, []byte(line_s+"\n")...)
+		}
+	}
+	err = jobScanner.Err()
+	return cfg_b, err
 }
 
 func (eh *errHandler_T) handleJobPost(baseDir string, c *gin.Context) error {
@@ -318,19 +364,19 @@ cat <<EOYD | less
 EOYD
 `, job.Root.Label, job.Name, job2_yb, timeStamp))
 
-	cmdName := strings.TrimSpace(strings.ToLower(job.Root.Label))
-	cmdDir := filepath.Join(baseDir, cmdName)
+	cmdFName := strings.TrimSpace(strings.ToLower(job.Root.Label))
+	cmdDir := filepath.Join(baseDir, cmdFName)
 	os.MkdirAll(cmdDir, 0777)
 
 	jobName := strings.TrimSpace(strings.ToLower(job.Name))
 	log.Info("generated job script",
-		"cmd", cmd_s, "cmdName", cmdName, "cmdDir", cmdDir,
+		"cmd", cmd_s, "cmdFName", cmdFName, "cmdDir", cmdDir,
 		"jobName", jobName, "size", len(jobScript_b))
 
 	var jobFPath, cs string
 	eh.safe(func() {
 		cs = eh.hashSha1(jobScript_b, nil)[:6]
-		jobFName := cmdName + "-" + jobName + "." + cs + ".cgs"
+		jobFName := cmdFName + "-" + jobName + "." + cs + ".cgs"
 		jobFPath = filepath.Join(cmdDir, jobFName)
 	})
 
@@ -353,11 +399,11 @@ EOYD
 	//	eh.safe(func() {
 	eh.safe(func() {
 		eh.forAllJobs(
-			baseDir, cmdName, jobName, "."+cs, // toIgnore,
+			baseDir, cmdFName, jobName, "."+cs, // toIgnore,
 
 			// cmdDir, cmdName, jobName
 			func(oldJobFPath string, oldJob_b []byte) error {
-				eh.renameToBak(cmdDir, cmdName, jobName, oldJobFPath, oldJob_b)
+				eh.renameToBak(cmdDir, cmdFName, jobName, oldJobFPath, oldJob_b)
 				return eh.err
 			},
 		)
@@ -393,11 +439,12 @@ func (eh *errHandler_T) forAllJobs(
 	toIgnore string,
 	handleFile func(string, []byte) error,
 ) {
-	cmdDir := filepath.Join(baseDir, cmdName)
+	cmdFName := strings.ToLower(strings.TrimSpace(cmdName))
+	cmdDir := filepath.Join(baseDir, cmdFName)
 	os.MkdirAll(cmdDir, 0777)
 
 	getJobFPath := func(pat string) string {
-		return mkJobFPath(cmdDir, cmdName, jobName, pat, false)
+		return mkJobFPath(cmdDir, cmdFName, jobName, pat, false)
 		//		return mkJobFPath(cmdDir, cmdName, "*", pat, false)
 	}
 	jobFPathPat := getJobFPath("*")

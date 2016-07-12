@@ -29,7 +29,7 @@ fi
 (cd wui && $EG go generate) &&
 	$EG go install -race &&
 	$UPX &&
-    $RUN
+    LOGXI=* $RUN
 
 ##	coligui wui
 ## 	$EG upx --ultra-brute /go/bin/coligui &&

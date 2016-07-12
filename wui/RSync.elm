@@ -150,7 +150,7 @@ update msg model =
         in
           { model
           | output = "RSync.JobSaveRequested '" ++ str ++ "' ..."
-          , lastOk = Nothing
+          , lastOk = Just ( "saving job " ++ str ++ " ..." )
           }
           ! [ saveCmdMsg ]   -- Cmd.batch [ saveCmdMsg, xCmdMsg ] ]
 
@@ -180,7 +180,10 @@ update msg model =
           loadJobsCmdMsg =
             loadJobs model
         in
-          { model | output = "RSync.JobsLoadRequested ..." }
+          { model
+          | output = "RSync.JobsLoadRequested ..."
+          , lastOk = Just "loading jobs ..."
+          }
           ! [ loadJobsCmdMsg ]   -- Cmd.batch [ saveCmdMsg, xCmdMsg ] ]
 
       LoadJobsSucceed loadedJobs ->

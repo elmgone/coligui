@@ -30,8 +30,9 @@ var (
 		Long:  `Run a web server which presents the Web UI for CoLiGui`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 
+			baseDir := "/tmp"
 			htmlFiles_l := []string{"index.html", "wui/index.html"}
-			return srv.ServeGin(33333, htmlFiles_l)
+			return srv.ServeGin(33333, baseDir, htmlFiles_l)
 
 			//			srv.ServeWui()
 		},
