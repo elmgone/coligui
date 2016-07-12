@@ -208,7 +208,10 @@ update msg model =
           } ! [ Cmd.map ComboMsg nCbMsg ]
 
       LoadJobsFail err ->
-        model ! []
+          { model
+          | output = toString err
+          , saveErr = Just err
+          } ! []
 
 {--------------------------------------}
 loadJobs : Model -> Cmd Msg
@@ -355,20 +358,25 @@ viewHead labelText model allowToSave =
       Html.div [] [
         Html.text ( "Save " )
       , Html.em [] [ Html.text ( selection ) ]
-      , errHtml
+      --, errHtml
       ]
   in
-    Html.table [] [ Html.tr [] [
-      Html.td [] [ Html.label [] [ Html.text "Job" ] ]
-    , Html.td [] [ button [
-                     onClick JobsLoadRequested
-                   ] [ text "Load All" ] ]
-    , Html.td [] [ ComboBox.viewOption "--" selectJob model.combo ]
-    , Html.td [] [ ComboBox.viewButton saveJobButtonText requestJobSave model.combo ]
-    , Html.td [] [ Html.label [] [ Html.text "New job name" ] ]
-    , Html.td [] [ Html.App.map ComboMsg ( ComboBox.viewField model.combo ) ]
-    , Html.td [] [ Html.App.map ComboMsg ( ComboBox.viewDbg model.combo ) ]
-    ] ]
+    Html.table [] [
+      Html.tr [] [
+        Html.td [] [ Html.label [] [ Html.text "Job" ] ]
+      , Html.td [] [ button [
+                       onClick JobsLoadRequested
+                     ] [ text "Load All" ] ]
+      , Html.td [] [ ComboBox.viewOption "--" selectJob model.combo ]
+      , Html.td [] [ ComboBox.viewButton saveJobButtonText requestJobSave model.combo ]
+      , Html.td [] [ Html.label [] [ Html.text "New job name" ] ]
+      , Html.td [] [ Html.App.map ComboMsg ( ComboBox.viewField model.combo ) ]
+      , Html.td [] [ Html.App.map ComboMsg ( ComboBox.viewDbg model.combo ) ]
+      ]
+    , tr [] [
+        td [ colspan 7 ] [ errHtml ]
+      ]
+    ]
 
 {------------------------------------------------------------
 viewDbgStr : Maybe String -> Html.Html Msg
