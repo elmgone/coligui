@@ -40,9 +40,9 @@ import Json.Encode as JE
 
 main =
   Html.App.program {
-    init = init,
-    view = view,
-    update = update,
+    init          = init,
+    view          = view,
+    update        = update,
     subscriptions = subscriptions
   }
 
@@ -51,11 +51,10 @@ main =
 
 type alias Model =
   { id           : String
---  , cfgName      : String
---  , tmpCfgName   : String
-
   , combo        : ComboBox.Model
-  , saveErr      : Maybe Http.Error
+  --, saveErr      : Maybe Http.Error
+  , lastErr      : Maybe Http.Error
+  , lastOk       : Maybe String
 
   , output       : String
   , debug        : Util.Model
@@ -86,7 +85,7 @@ init =
       RSyncConfig.init
     ] (W.fmtList "rsync {{}} # ..." " ")
   in
-    ( Model "" ComboBox.init Nothing "" Util.init root
+    ( Model "" ComboBox.init Nothing (Just "started") "" Util.init root
     , Cmd.none )
 
 
@@ -116,17 +115,19 @@ update msg model =
         let
           ( newRoot, cmd ) = W.update wMsg model.root
         in
-          ( { model | root = newRoot }
-          , Cmd.map CallWidget cmd
-          )
+          { model
+          | root = newRoot
+          , lastOk = Nothing
+          } ! [ Cmd.map CallWidget cmd ]
 
       ComboMsg cbMsg ->
         let
           ( newCombo, nCbMsg ) = ComboBox.update cbMsg model.combo
         in
-          ( { model | combo = newCombo }
-          , Cmd.map ComboMsg nCbMsg
-          )
+          { model
+          | combo = newCombo
+          , lastOk = Nothing
+          } ! [ Cmd.map ComboMsg nCbMsg ]
 
       DebugMsg dbgMsg ->
         let
@@ -141,7 +142,10 @@ update msg model =
           msgStr = Debug.log "RSync.JobSelect" str
           ( nCombo, nCbMsg ) = ComboBox.update (ComboBox.Select msgStr) model.combo
         in
-          { model | combo = nCombo } ! [ Cmd.map ComboMsg nCbMsg ]
+          { model
+          | combo = nCombo
+          , lastOk = Nothing
+          } ! [ Cmd.map ComboMsg nCbMsg ]
 
       JobSaveRequested str ->
         let
@@ -149,43 +153,33 @@ update msg model =
 
           saveCmdMsg =
             saveJob msgStr model
-
-          -- ( nCombo, nCbMsg ) = ComboBox.update (ComboBox.Success msgStr) model.combo
-          -- xCmdMsg =
-          --  Cmd.map ComboMsg nCbMsg
         in
-          -- { model | combo = nCombo } ! [ saveCmdMsg ]   -- Cmd.batch [ saveCmdMsg, xCmdMsg ] ]
-          { model | output = "RSync.JobSaveRequested '" ++ str ++ "' ..." }
+          { model
+          | output = "RSync.JobSaveRequested '" ++ str ++ "' ..."
+          , lastOk = Nothing
+          }
           ! [ saveCmdMsg ]   -- Cmd.batch [ saveCmdMsg, xCmdMsg ] ]
 
       SaveSucceed saveResult ->
         let
           ( nCombo, nCbMsg ) =
             ComboBox.update (ComboBox.Success saveResult.jobName) model.combo
-          -- xCmdMsg =
-            -- Cmd.map ComboMsg nCbMsg
         in
           { model
           | combo = nCombo
           , output = toString saveResult
-          , saveErr = Nothing
+          , lastErr = Nothing
+          , lastOk = Just ( "job " ++ saveResult.jobName ++ " saved" )
           } ! [ Cmd.map ComboMsg nCbMsg ]
 {--------------------------------------
-            ( { model
-              | output = toString sRes
-              , saveErr = Nothing
-              }
-            , Cmd.none
-            )
 --------------------------------------}
 
-      SaveFail err ->  -- Http.Error
-            ( { model
-              | output = toString err
-              , saveErr = Just err
-              }
-            , Cmd.none
-            )
+      SaveFail err ->
+          { model
+          | output = toString err
+          , lastErr = Just err
+          , lastOk = Nothing
+          } ! []
       
       JobsLoadRequested ->
         let
@@ -204,13 +198,15 @@ update msg model =
           { model
           | combo = nCombo
           , output = toString loadedJobs
-          , saveErr = Nothing
+          , lastErr = Nothing
+          , lastOk = Just "jobs loaded"
           } ! [ Cmd.map ComboMsg nCbMsg ]
 
       LoadJobsFail err ->
           { model
           | output = toString err
-          , saveErr = Just err
+          , lastErr = Just err
+          , lastOk = Nothing
           } ! []
 
 {--------------------------------------}
@@ -339,7 +335,7 @@ viewHead : String -> Model -> Bool -> Html.Html Msg
 viewHead labelText model allowToSave =
   let
     errHtml =
-      case model.saveErr of
+      case model.lastErr of
         Just err ->
           Html.b [ Html.Attributes.style [
             --("backgroundColor", "green")
@@ -352,26 +348,36 @@ viewHead labelText model allowToSave =
           ]
         
         Nothing ->
-          Html.div [] []
+          case model.lastOk of
+            Just okStr ->
+              Html.div [ Html.Attributes.style [
+                ("color", "green")
+              ] ] [
+                Html.text ( "Ok: " ++ okStr )
+              ]
+
+            Nothing ->
+              Html.div [ Html.Attributes.style [
+                ("color", "green")
+              ] ] [
+                Html.text "."
+              ]
 
     saveJobButtonText selection =
       Html.div [] [
         Html.text ( "Save " )
       , Html.em [] [ Html.text ( selection ) ]
-      --, errHtml
       ]
   in
     Html.table [] [
       Html.tr [] [
-        Html.td [] [ Html.label [] [ Html.text "Job" ] ]
-      , Html.td [] [ button [
-                       onClick JobsLoadRequested
-                     ] [ text "Load All" ] ]
-      , Html.td [] [ ComboBox.viewOption "--" selectJob model.combo ]
-      , Html.td [] [ ComboBox.viewButton saveJobButtonText requestJobSave model.combo ]
-      , Html.td [] [ Html.label [] [ Html.text "New job name" ] ]
-      , Html.td [] [ Html.App.map ComboMsg ( ComboBox.viewField model.combo ) ]
-      , Html.td [] [ Html.App.map ComboMsg ( ComboBox.viewDbg model.combo ) ]
+        td [] [ label [] [ text "Jobs" ] ]
+      , td [] [ button [ onClick JobsLoadRequested ] [ text "Load" ] ]
+      , td [] [ ComboBox.viewOption "--" selectJob model.combo ]
+      , td [] [ ComboBox.viewButton saveJobButtonText requestJobSave model.combo ]
+      , td [] [ label [] [ text "New job name" ] ]
+      , td [] [ Html.App.map ComboMsg ( ComboBox.viewField model.combo ) ]
+      , td [] [ Html.App.map ComboMsg ( ComboBox.viewDbg model.combo ) ]
       ]
     , tr [] [
         td [ colspan 7 ] [ errHtml ]

@@ -113,6 +113,7 @@ update msg model =
         { model
         | entries = newEntries
         , field = newField
+        , tmpField = ""
         } ! []
 
 
