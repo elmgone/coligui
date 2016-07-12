@@ -248,9 +248,9 @@ type alias SaveJobResult =
 decodeJobSaved : JD.Decoder SaveJobResult
 decodeJobSaved =
   JD.object4 SaveJobResult
-    ("json-id"  := JD.string)
-    ("yaml-id"  := JD.string)
-    ("job-name" := JD.string)
+    ("json_id"  := JD.string)
+    ("yaml_id"  := JD.string)
+    ("job_name" := JD.string)
     ("cmd"      := JD.string)
 
 {--------------------------------------

@@ -167,7 +167,7 @@ func (eh *errHandler_T) handleJobList(baseDir string, c *gin.Context) error {
 
 	cmdName := c.Param("cmd")
 	//		id_s := c.Param("id")
-	if cmdName != "rsync" {
+	if cmdName != "RSync" {
 		panic("UNKNOWN cmdName = " + cmdName)
 	}
 
@@ -178,22 +178,28 @@ func (eh *errHandler_T) handleJobList(baseDir string, c *gin.Context) error {
 				"id":   "x0",
 				"jobs": []gin.H{
 					gin.H{
-						"name": "hra",
-						"id":   "x1",
+						"name":    "hra",
+						"json_id": "x1",
+						"yaml_id": "x1",
+						"cmd":     "do IT!",
 						"versions": []string{
 							"v1", "v2", "v3",
 						},
 					},
 					gin.H{
-						"name": "kati",
-						"id":   "x2",
+						"name":    "kati",
+						"json_id": "x1",
+						"yaml_id": "x1",
+						"cmd":     "do IT!",
 						"versions": []string{
 							"v1", "v2", "v3",
 						},
 					},
 					gin.H{
-						"name": "default",
-						"id":   "x3",
+						"name":    "default",
+						"json_id": "x1",
+						"yaml_id": "x1",
+						"cmd":     "do IT!",
 						"versions": []string{
 							"v1", "v2", "v3",
 						},
@@ -340,9 +346,10 @@ EOYD
 
 	eh.safe(func() {
 		res := gin.H{
-			"jid": job.JsonSha1,
-			"yid": job.YamlSha1,
-			"cmd": cmdMsg, // job.Root.CmdLet,
+			"job_name": job.Name,
+			"json_id":  job.JsonSha1,
+			"yaml_id":  job.YamlSha1,
+			"cmd":      cmdMsg, // job.Root.CmdLet,
 		}
 		c.JSON(http.StatusCreated, res)
 	})
