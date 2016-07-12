@@ -26,12 +26,13 @@ import RSyncConfig exposing (..)
 
 import ComboBox -- as CB
 import Util
+import JobType
 
-import Html  -- exposing (..)
+import Html              exposing (..)
 import Html.App
-import Html.Events exposing (..)
-import Html.Attributes exposing (..)
-import Http exposing (..)
+import Html.Events       exposing (..)
+import Html.Attributes   exposing (..)
+import Http              exposing (..)
 import Task
 import String
 import Json.Decode as JD exposing ((:=))
@@ -96,11 +97,14 @@ type Msg =
   | ComboMsg ComboBox.Msg
   | DebugMsg Util.Msg
   | JobSelect String
-  | JobSave String
+  | JobSaveRequested String
+  | SaveSucceed SaveJobResult
+  | SaveFail Http.Error
+  | JobsLoadRequested
+  | LoadJobsFail Http.Error
+  | LoadJobsSucceed JobType.LoadJobsResult
 
 --    | Save
-    | SaveSucceed SaveResult
-    | SaveFail Http.Error
 --    | ToggleDebug Bool
 --    | EditCfgName String
 --    | SetCfgName String
@@ -139,45 +143,41 @@ update msg model =
         in
           { model | combo = nCombo } ! [ Cmd.map ComboMsg nCbMsg ]
 
-      JobSave str ->
+      JobSaveRequested str ->
         let
-          msgStr = Debug.log "RSync.JobSave" str
+          msgStr = Debug.log "RSync.JobSaveRequested" str
 
           saveCmdMsg =
             saveJob msgStr model
 
-          ( nCombo, nCbMsg ) = ComboBox.update (ComboBox.Success msgStr) model.combo
-          xCmdMsg =
-            Cmd.map ComboMsg nCbMsg
+          -- ( nCombo, nCbMsg ) = ComboBox.update (ComboBox.Success msgStr) model.combo
+          -- xCmdMsg =
+          --  Cmd.map ComboMsg nCbMsg
         in
-          { model | combo = nCombo } ! [ Cmd.batch [ saveCmdMsg, xCmdMsg ] ]
+          -- { model | combo = nCombo } ! [ saveCmdMsg ]   -- Cmd.batch [ saveCmdMsg, xCmdMsg ] ]
+          { model | output = "RSync.JobSaveRequested '" ++ str ++ "' ..." }
+          ! [ saveCmdMsg ]   -- Cmd.batch [ saveCmdMsg, xCmdMsg ] ]
 
-{--------------------------------------
-      Save ->
+      SaveSucceed saveResult ->
         let
-          data = W.treeToJson 2 model.root
-          newModel = { model
-              | output = data
-              , cfgName = model.tmpCfgName
-              }
+          ( nCombo, nCbMsg ) =
+            ComboBox.update (ComboBox.Success saveResult.jobName) model.combo
+          -- xCmdMsg =
+            -- Cmd.map ComboMsg nCbMsg
         in
-          ( newModel, saveJob newModel )
---------------------------------------
-            ( { model
-              | output = data
-              ,
-              }
-            , saveJob model
-            )
---------------------------------------}
-
-      SaveSucceed sRes ->  -- String
+          { model
+          | combo = nCombo
+          , output = toString saveResult
+          , saveErr = Nothing
+          } ! [ Cmd.map ComboMsg nCbMsg ]
+{--------------------------------------
             ( { model
               | output = toString sRes
               , saveErr = Nothing
               }
             , Cmd.none
             )
+--------------------------------------}
 
       SaveFail err ->  -- Http.Error
             ( { model
@@ -186,37 +186,41 @@ update msg model =
               }
             , Cmd.none
             )
+      
+      JobsLoadRequested ->
+        let
+          loadJobsCmdMsg =
+            loadJobs model
+        in
+          { model | output = "RSync.JobsLoadRequested ..." }
+          ! [ loadJobsCmdMsg ]   -- Cmd.batch [ saveCmdMsg, xCmdMsg ] ]
 
-{--------------------------------------
---      ToggleDebug dbg ->
-  --          ( { model | debug = dbg }, Cmd.none )
+      LoadJobsSucceed loadedJobs ->
+        let
+          jobNames = List.map .name loadedJobs.jobType.jobs
+          ( nCombo, nCbMsg ) =
+            ComboBox.update (ComboBox.NewOptions jobNames) model.combo
+        in
+          { model
+          | combo = nCombo
+          , output = toString loadedJobs
+          , saveErr = Nothing
+          } ! [ Cmd.map ComboMsg nCbMsg ]
 
-      EditCfgName cName ->
-            ( { model | tmpCfgName = cName }
-            , Cmd.none
-            )
+      LoadJobsFail err ->
+        model ! []
 
-      SetCfgName cName ->
-            ( { model | cfgName = cName }
-            , Cmd.none
-            )
+{--------------------------------------}
+loadJobs : Model -> Cmd Msg
+loadJobs model =
+  let
+    url = "/jobs/RSync"
+    -- body_s = W.jobAsJson 2 jobName model.root
+    -- httpCall = Http.get decodeJobsLoaded url -- (Http.string body_s)
+    httpCall = Http.get JobType.decodeLoadedJobs url -- (Http.string body_s)
+  in
+    Task.perform LoadJobsFail LoadJobsSucceed httpCall
 --------------------------------------}
-
-
-type alias SaveResult =
---  { id  : String
-  { jid  : String
-  , yid  : String
-  , cmd  : String
-  }
-
-decodeSaved : JD.Decoder SaveResult
-decodeSaved =
-  JD.object3 SaveResult
---    ("id"  := JD.string)
-    ("jid"  := JD.string)
-    ("yid"  := JD.string)
-    ("cmd" := JD.string)
 
 {--------------------------------------}
 saveJob : String -> Model -> Cmd Msg
@@ -224,11 +228,51 @@ saveJob jobName model =
   let
     url = "/jobs/RSync"
     body_s = W.jobAsJson 2 jobName model.root
-    postCall = Http.post decodeSaved url (Http.string body_s)
+    postCall = Http.post decodeJobSaved url (Http.string body_s)
   in
     Task.perform SaveFail SaveSucceed postCall
 --------------------------------------}
 
+
+
+type alias SaveJobResult =
+  { jsonId  : String
+  , yamlId  : String
+  , jobName : String
+  , cmd     : String
+  }
+
+decodeJobSaved : JD.Decoder SaveJobResult
+decodeJobSaved =
+  JD.object4 SaveJobResult
+    ("json-id"  := JD.string)
+    ("yaml-id"  := JD.string)
+    ("job-name" := JD.string)
+    ("cmd"      := JD.string)
+
+{--------------------------------------
+type alias LoadJobsResult =
+  { jsonId  : String
+  , yamlId  : String
+  , jobName : String
+  , cmd     : String
+  }
+
+decodeJobsLoaded : JD.Decoder LoadJobsResult
+decodeJobsLoaded =
+  JD.object3 SaveJobResult
+    ("json-id"  := JD.string)
+    ("yaml-id"  := JD.string)
+    ("job-name" := JD.string)
+    ("cmd"      := JD.string)
+
+decodeJobType : Json.Decode.Decoder Model
+decodeJobType =
+    Json.Decode.succeed Model
+        |: ("jobs" := Json.Decode.list decodeJob)
+        |: ("id" := Json.Decode.string)
+        |: ("name" := Json.Decode.string)
+--------------------------------------}
 
 
 -- VIEW
@@ -283,9 +327,9 @@ selectJob : String -> Msg
 selectJob str =
   JobSelect str
 
-successX : String -> Msg
-successX str =
-  JobSave str
+requestJobSave : String -> Msg
+requestJobSave str =
+  JobSaveRequested str
 
 
 viewHead : String -> Model -> Bool -> Html.Html Msg
@@ -307,7 +351,7 @@ viewHead labelText model allowToSave =
         Nothing ->
           Html.div [] []
 
-    buttonText selection =
+    saveJobButtonText selection =
       Html.div [] [
         Html.text ( "Save " )
       , Html.em [] [ Html.text ( selection ) ]
@@ -316,8 +360,11 @@ viewHead labelText model allowToSave =
   in
     Html.table [] [ Html.tr [] [
       Html.td [] [ Html.label [] [ Html.text "Job" ] ]
+    , Html.td [] [ button [
+                     onClick JobsLoadRequested
+                   ] [ text "Load All" ] ]
     , Html.td [] [ ComboBox.viewOption "--" selectJob model.combo ]
-    , Html.td [] [ ComboBox.viewButton buttonText successX model.combo ]
+    , Html.td [] [ ComboBox.viewButton saveJobButtonText requestJobSave model.combo ]
     , Html.td [] [ Html.label [] [ Html.text "New job name" ] ]
     , Html.td [] [ Html.App.map ComboMsg ( ComboBox.viewField model.combo ) ]
     , Html.td [] [ Html.App.map ComboMsg ( ComboBox.viewDbg model.combo ) ]

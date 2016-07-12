@@ -14,8 +14,6 @@
 
 module ComboBox exposing (..)
 
--- import Widget as W -- exposing (..)
-
 import Html -- exposing (..)
 import Html.Events -- exposing (..)
 import Html.Attributes -- exposing (..)
@@ -83,6 +81,7 @@ type Msg
   | Select String
   | Success String
   | ToggleDebug Bool
+  | NewOptions ( List String )
 
 
 -- How we update our Model on a given Msg?
@@ -100,6 +99,21 @@ update msg model =
 
     ToggleDebug dbg ->
       { model | debug = dbg } ! []
+    
+    -- NewOptions ( List String )
+    NewOptions newOpts ->
+      let
+        ( newField, newEntries ) =
+          case ( List.head newOpts ) of
+            Just firstEntry ->
+              ( firstEntry, newOpts )
+            Nothing ->
+              ( "", [] )
+      in
+        { model
+        | entries = newEntries
+        , field = newField
+        } ! []
 
 
 updateWith : Bool -> String -> Model -> ( Model, Cmd Msg )

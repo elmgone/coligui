@@ -13,20 +13,6 @@
 -- limitations under the License.
 
 module JobType exposing (..)
-{------------------------------------------------------- }
-    Node, Msg, Id
-  , aRoot, aVertical, aHorizontal, aSwitch, aBool, aBoolX, aBooT, aString
-  --, Formatter
-  , fmtList, fmtById   -- , fmtBool
-
-  , update
-  , view, viewRoot
-  , treeToJson, nodeToJson  --, toJson
-  , jobAsJson
-
-  , nodeAsHtmlLI, cmdOf
-  )
--------------------------------------------------------}
 
 import Widget as W exposing (..)
 
@@ -43,6 +29,10 @@ import Dict   -- as Di  --  exposing (..)
 
 -- MODEL
 
+type alias LoadJobsResult =
+    { jobType : Model
+    }
+{----------------------------------------------}
 {----------------------------------------------
 ----------------------------------------------}
 type alias Model =
@@ -50,57 +40,16 @@ type alias Model =
     , id   : String
     , name : String
     --, node : W.Node
-    , cfgName      : String
-    , tmpCfgName   : String
+    --, cfgName      : String
+    --, tmpCfgName   : String
     }
-
-init : Model
-init =
-  Model [
-    Job [] "x-new" "Create New"
-  , Job [] "x1" "default"
-  , Job [] "x2" "hra"
-  , Job [] "x3" "kati"
-  ] "jt5" "JobTypes" "" "default"
-
-{----------------------------------------------
-type alias X1 =
-    { JobType : Model
-    }
-----------------------------------------------}
-
-decodeJobType : Json.Decode.Decoder Model
-decodeJobType =
-    Json.Decode.succeed Model
-        |: ("jobs" := Json.Decode.list decodeJob)
-        |: ("id" := Json.Decode.string)
-        |: ("name" := Json.Decode.string)
-{----------------------------------------------
-decodeX1 : Json.Decode.Decoder X1
-decodeX1 =
-    Json.Decode.succeed X1
-        |: ("job_type" := decodeJobType)
-----------------------------------------------}
-
-encodeJobType : Model -> Json.Encode.Value
-encodeJobType record =
-    Json.Encode.object
-        [ ("jobs", Json.Encode.list <| List.map encodeJob record.jobs)
-        , ("id", Json.Encode.string record.id)
-        , ("name", Json.Encode.string record.name)
-        ]
-{----------------------------------------------
-encodeX1 : X1 -> Json.Encode.Value
-encodeX1 record =
-    Json.Encode.object
-        [ ("job_type", encodeJobType record.JobType)
-        ]
-----------------------------------------------}
 
 type alias Job =
-    { versions : List String
-    , id : String
-    , name : String
+    { -- versions : List String
+    --, 
+      jsonId   : String
+    , yamlId   : String
+    , name     : String
     }
 
 
@@ -110,12 +59,54 @@ type alias X1 =
     }
 ----------------------------------------------}
 
+init : Model
+init =
+  Model [
+    Job "0-json" "0-yaml" "Create New"
+  , Job "1-json" "1-yaml" "default"
+  , Job "2-json" "2-yaml" "hra"
+  , Job "3-json" "3-yaml" "kati"
+  ] "jt5" "Unknown Job Type"
+
+{----------------------------------------------}
+-- decodeJobsLoaded : JD.Decoder LoadJobsResult
+decodeLoadedJobs : Json.Decode.Decoder LoadJobsResult
+decodeLoadedJobs =
+    Json.Decode.succeed LoadJobsResult
+        |: ("job_type" := decodeJobType)
+{----------------------------------------------}
+
+decodeJobType : Json.Decode.Decoder Model
+decodeJobType =
+    Json.Decode.succeed Model
+        |: ("jobs" := Json.Decode.list decodeJob)
+        |: ("id"   := Json.Decode.string)
+        |: ("name" := Json.Decode.string)
+{----------------------------------------------}
+
+encodeLoadJobsResult : LoadJobsResult -> Json.Encode.Value
+encodeLoadJobsResult record =
+    Json.Encode.object
+        [ ("job_type", encodeJobType record.jobType)
+        ]
+{----------------------------------------------}
+
+encodeJobType : Model -> Json.Encode.Value
+encodeJobType record =
+    Json.Encode.object
+        [ ("jobs", Json.Encode.list <| List.map encodeJob record.jobs)
+        , ("id", Json.Encode.string record.id)
+        , ("name", Json.Encode.string record.name)
+        ]
+{----------------------------------------------}
+
 decodeJob : Json.Decode.Decoder Job
 decodeJob =
     Json.Decode.succeed Job
-        |: ("versions" := Json.Decode.list Json.Decode.string)
-        |: ("id" := Json.Decode.string)
-        |: ("name" := Json.Decode.string)
+        -- |: ("versions" := Json.Decode.list Json.Decode.string)
+        |: ("json_id"  := Json.Decode.string)
+        |: ("yaml_id"  := Json.Decode.string)
+        |: ("name"     := Json.Decode.string)
 {----------------------------------------------
 decodeX1 : Json.Decode.Decoder X1
 decodeX1 =
@@ -127,7 +118,8 @@ encodeJob : Job -> Json.Encode.Value
 encodeJob record =
     Json.Encode.object
         [ -- ("versions", Json.Encode.list <| Json.Encode.list (Json.Encode.string record.versions))
-          ("id", Json.Encode.string record.id)
+          ("json_id", Json.Encode.string record.jsonId)
+        , ("yaml_id", Json.Encode.string record.yamlId)
         , ("name", Json.Encode.string record.name)
         ]
 

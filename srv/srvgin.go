@@ -127,7 +127,12 @@ func /*(eh *errHandler_T)*/ ServeGinX(port int, baseDir string) error {
 		eh.handleJobPost(baseDir, c)
 	})
 
-	router.GET("/jobs", func(c *gin.Context) {
+	//	router.GET("/jobs", func(c *gin.Context) {
+	//		eh := errHandler_T{}
+	//		eh.handleJobList(baseDir, c)
+	//	})
+
+	router.GET("/jobs/:cmd", func(c *gin.Context) {
 		eh := errHandler_T{}
 		eh.handleJobList(baseDir, c)
 	})
@@ -157,27 +162,21 @@ func /*(eh *errHandler_T)*/ ServeGinX(port int, baseDir string) error {
 }
 
 func (eh *errHandler_T) handleJobList(baseDir string, c *gin.Context) error {
-	//	cmdName := c.Param("cmd")
-	//		id_s := c.Param("id")
-
 	//... parse JSON in post body
 	defer c.Request.Body.Close()
 
+	cmdName := c.Param("cmd")
+	//		id_s := c.Param("id")
+	if cmdName != "rsync" {
+		panic("UNKNOWN cmdName = " + cmdName)
+	}
+
 	eh.safe(func() {
 		res := gin.H{
-			//			"Job": //-[]gin.H{
-			//			gin.H{
-			//				"name": "hra",
-			//				"id":   "x1",
-			//				"versions": []string{
-			//					"v1", "v2", "v3",
-			//				},
-			//			},
-
-			"JobType": gin.H{
-				"Name": "RSync",
-				"Id":   "x0",
-				"Jobs": []gin.H{
+			"job_type": gin.H{
+				"name": "RSync",
+				"id":   "x0",
+				"jobs": []gin.H{
 					gin.H{
 						"name": "hra",
 						"id":   "x1",
