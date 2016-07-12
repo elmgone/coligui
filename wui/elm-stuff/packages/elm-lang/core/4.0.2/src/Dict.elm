@@ -14,8 +14,7 @@ module Dict exposing
 type. This includes `Int`, `Float`, `Time`, `Char`, `String`, and tuples or
 lists of comparable types.
 
-Insert, remove, and query operations all take *O(log n)* time. Dictionary
-equality with `(==)` is unreliable and should not be used.
+Insert, remove, and query operations all take *O(log n)* time.
 
 # Dictionaries
 @docs Dict
@@ -541,7 +540,7 @@ merge leftStep bothStep rightStep leftDict rightDict initialResult =
 
         (lKey, lValue) :: rest ->
           if lKey < rKey then
-            (rest, leftStep lKey lValue result)
+            stepState rKey rValue (rest, leftStep lKey lValue result)
 
           else if lKey > rKey then
             (list, rightStep rKey rValue result)

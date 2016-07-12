@@ -25,6 +25,7 @@ import Widget as W
 import RSyncConfig exposing (..)
 
 import ComboBox -- as CB
+import Util
 
 import Html  -- exposing (..)
 import Html.App
@@ -56,7 +57,7 @@ type alias Model =
   , saveErr      : Maybe Http.Error
 
   , output       : String
-  , debug        : Bool
+  , debug        : Util.Model
 
   -- widgets
   , root      : W.Node
@@ -84,7 +85,7 @@ init =
       RSyncConfig.init
     ] (W.fmtList "rsync {{}} # ..." " ")
   in
-    ( Model "" ComboBox.init Nothing "" False root
+    ( Model "" ComboBox.init Nothing "" Util.init root
     , Cmd.none )
 
 
@@ -93,6 +94,7 @@ init =
 type Msg =
     CallWidget W.Msg
   | ComboMsg ComboBox.Msg
+  | DebugMsg Util.Msg
   | JobSelect String
   | JobSave String
 
@@ -120,6 +122,14 @@ update msg model =
         in
           ( { model | combo = newCombo }
           , Cmd.map ComboMsg nCbMsg
+          )
+
+      DebugMsg dbgMsg ->
+        let
+          ( newDebug, nDbgMsg ) = Util.update dbgMsg model.debug
+        in
+          ( { model | debug = newDebug }
+          , Cmd.map DebugMsg nDbgMsg
           )
 
       JobSelect str ->
@@ -240,7 +250,10 @@ viewBody model =
   let
     (n, v) = W.viewRoot model.root
   in
-    Html.App.map CallWidget v
+    Html.div [] [
+      Html.App.map CallWidget v
+    , Html.App.map DebugMsg ( Util.viewDbgStr model.output model.debug )
+    ]
 
 {------------------------------------------------------------
   let
@@ -278,19 +291,19 @@ successX str =
 viewHead : String -> Model -> Bool -> Html.Html Msg
 viewHead labelText model allowToSave =
   let
-    errMsg =
+    errHtml =
       case model.saveErr of
         Just err ->
           Html.b [ Html.Attributes.style [
             --("backgroundColor", "green")
           --,
-          ("color", "red")
+            ("color", "red")
 --        , ("height", "90px")
 --        , ("width", "100%")
-        ] ] [
-          Html.text ( "   !! " ++ ( toString err ) ++ " !!" )
-        ]
---          toString err
+          ] ] [
+            Html.text ( "   !! " ++ ( toString err ) ++ " !!" )
+          ]
+        
         Nothing ->
           Html.div [] []
 
@@ -298,15 +311,7 @@ viewHead labelText model allowToSave =
       Html.div [] [
         Html.text ( "Save " )
       , Html.em [] [ Html.text ( selection ) ]
-      , errMsg
-      {------------------------------------------
-      , Html.em [ Html.Attributes.style [
-          ("backgroundColor", "red")
---        , ("height", "90px")
---        , ("width", "100%")
-        ] ] [
-          Html.text ( ": " ++ errMsg ) ]
-      ------------------------------------------}
+      , errHtml
       ]
   in
     Html.table [] [ Html.tr [] [
@@ -317,8 +322,29 @@ viewHead labelText model allowToSave =
     , Html.td [] [ Html.App.map ComboMsg ( ComboBox.viewField model.combo ) ]
     , Html.td [] [ Html.App.map ComboMsg ( ComboBox.viewDbg model.combo ) ]
     ] ]
+
 {------------------------------------------------------------
+viewDbgStr : Maybe String -> Html.Html Msg
+viewDbg optErrStr =
+  let
+    dbgInfoHtml =
+      case optErrStr of
+        Just errStr ->
+          Html.text errStr
+        Nothing ->
+          Html.div [] []
+  in
+      Html.div [] [
+        Html.label [] [ Html.text "debug" ]
+      , Html.input [
+          Html.Attributes.type' "checkbox"
+          , Html.Attributes.checked model.debug
+          , Html.Events.onCheck ToggleDebug
+        ] []
+      , dbgInfoHtml
+      ]
 ------------------------------------------------------------}
+
 
 {------------------------------------------------------------
   let

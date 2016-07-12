@@ -90,35 +90,13 @@ update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
   case msg of
     UpdateField str ->
-      { model | tmpField = str, field = "" }
-        ! []
+      { model | tmpField = str, field = "" } ! []
 
     Select str ->
       updateWith False str model
-      {-------------------------------------------------------
-      let
-        nEntries = model.entries
-      in
-        { model
-        | field = str
-        , tmpField = ""
-        --, entries = nEntries
-        } ! []
-      -------------------------------------------------------}
 
     Success str ->
       updateWith True str model
-      {-------------------------------------------------------
-      let
-        nEntries =
-          str :: List.filter (\ e -> e /= str ) model.entries
-      in
-        { model
-        | field = str
-        , tmpField = ""
-        , entries = nEntries
-        } ! []
-      -------------------------------------------------------}
 
     ToggleDebug dbg ->
       { model | debug = dbg } ! []
@@ -202,22 +180,22 @@ viewOption neutralEntry selectMsg model =
 viewField : Model -> Html.Html Msg
 viewField model =
   let
-      fieldIsEmpty = String.isEmpty ( String.trim model.field )
+    fieldIsEmpty = String.isEmpty ( String.trim model.field )
   in
 {-------------------------------------------------------------------
 -------------------------------------------------------------------}
-                Html.input [
-                  Html.Attributes.type' "text"
-                , Html.Attributes.value model.tmpField
-                , Html.Events.onInput UpdateField
-                --, disabled ( not fieldIsEmpty )
+    Html.input [
+      Html.Attributes.type' "text"
+    , Html.Attributes.value model.tmpField
+    , Html.Events.onInput UpdateField
+    --, disabled ( not fieldIsEmpty )
+    , Html.Attributes.autofocus True
                 
-        --, placeholder "What needs to be done?"
-        --, name "newTodo"
-        --, onInput UpdateField
-        --, onEnter Add
-          , Html.Attributes.autofocus True
-                ] []
+    --, placeholder "What needs to be done?"
+    --, name "newTodo"
+    --, onInput UpdateField
+    --, onEnter Add
+    ] []
 
 
 
