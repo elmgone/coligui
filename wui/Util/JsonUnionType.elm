@@ -8,20 +8,38 @@ type Value
   = BoolValue Bool
   | StringValue String
   | RootCmd
-  | Group Bool
+  | Group Orientation
   | Switch Id
+
 type alias Id = String
+
+type Orientation = Vertical | Horizontal | CrossEyed
+
 -- userID = oneOf [ map OldID int , map NewID string , null NoID ]
+
+
 
 decValue =
   oneOf [
     object1 BoolValue ( "bool" := bool )
   , object1 StringValue ( "string" := string )
   , object1 identity ( "root" := null RootCmd )
-  , object1 Group ( "group" := bool )
+  --, string ( null RootCmd )
+  --, object1 Group ( "group" := bool )
+  , object1 Group ( "group" := devOrient )
   , object1 Switch ( "switch" := string )
   ]
 
+devOrient =
+  --oneOf [
+    map str2or string
+  --]
+
+str2or s =
+  case s of
+    "vertical" -> Vertical
+    "horizontal" -> Horizontal
+    _ -> CrossEyed
 
 encValue v =
   case v of
@@ -31,8 +49,22 @@ encValue v =
       JE.object [ ("string", JE.string s ) ]
     RootCmd ->
       JE.object [ ("root", JE.null ) ]
-    Group vert ->
-      JE.object [ ("group", JE.bool vert ) ]
+      --JE.string "root"
+--    Group vert ->
+--      --JE.object [ ("group", JE.bool vert ) ]
+--      if vert then
+--      JE.object [ ("group", JE.string "vertical" ) ]
+--      else
+--        JE.object [ ("group", JE.string "horizontal" ) ]
+    Group orient ->
+      --JE.object [ ("group", JE.bool vert ) ]
+      case orient of
+        Vertical ->
+          JE.object [ ("group", JE.string "vertical" ) ]
+        Horizontal ->
+          JE.object [ ("group", JE.string "horizontal" ) ]
+        CrossEyed ->
+          JE.object [ ("group", JE.string "xxx" ) ]
     Switch sw ->
       JE.object [ ("switch", JE.string sw ) ]
 
@@ -40,7 +72,8 @@ encValue v =
 data = [
     RootCmd
   , Switch "left"
-  , Group True
+  --, Group True
+  , Group Vertical
   , BoolValue False
   , StringValue "YESSSS"
   ]
@@ -55,11 +88,12 @@ res = [
      decodeString decValue "{\"bool\": true}"
   ,  decodeString decValue "{\"string\": \"hey\"}"
   ,  decodeString decValue "{\"root\": null}"
-  ,  decodeString decValue "{\"group\": false}"
+--  ,  decodeString decValue "{\"group\": false}"
+  ,  decodeString decValue "{\"group\": \"horizontal\"}"
   ,  decodeString decValue "{\"switch\": \"opt1\"}"
   ]
 
-res3 = "[ {\"bool\": true}, {\"string\": \"hey\"}, {\"root\": null}, {\"group\": false}, {\"switch\": \"opt1\"} ]"
+res3 = "[ {\"bool\": true}, {\"string\": \"hey\"}, {\"root\": null}, {\"group\": \"ss\"}, {\"switch\": \"opt1\"} ]"
 res3_l =
   decodeString ( list decValue ) res3
 
@@ -79,7 +113,7 @@ res_sl = [
      "{\"bool\": true}"
   ,  "{\"string\": \"hey\"}"
   ,  "{\"root\": null}"
-  ,  "{\"group\": false}"
+  ,  "{\"group\": \"h\"}"
   ,  "{\"switch\": \"opt1\"}"
   ]
 
